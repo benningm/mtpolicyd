@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+# mtpolicyd        Startup script for mtpolicyd.
+#
+# chkconfig: - 79 31
+# description: a postfix policy daemon used by the mailteam
+### BEGIN INIT INFO
+# Provides: $mtpolicyd
+# Required-Start: $memcached
+# Required-Stop: $memcached
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: a postfix policy daemon used by the mailteam
+# Description: mtpolicyd is a postfix policy daemon able to provide
+#     advanced checks into postfix.
+### END INIT INFO
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+PIDFILE=/var/run/mtpolicyd/mtpolicyd.pid
+
+prog=mtpolicyd
+exec=/usr/bin/mtpolicyd
+lockfile=/var/lock/subsys/$prog
+
+# Source config
+if [ -f /etc/sysconfig/$prog ] ; then
+    . /etc/sysconfig/$prog
+fi
+
+start() {
+	[ -x $exec ] || exit 5
+
+	umask 077
+
+        echo -n $"Starting mtpolicyd: "
+        daemon $exec
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch $lockfile
+        return $RETVAL
+}
+stop() {
+        echo -n $"Shutting down mtpolicyd: "
+        killproc -p "$PIDFILE" $exec
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && rm -f $lockfile
+        return $RETVAL
+}
+rhstatus() {
+        status -p "$PIDFILE" -l $prog $exec
+}
+restart() {
+        stop
+        start
+}
+reload() {
+        echo -n $"Reloading mtpolicyd: "
+        killproc -p "$PIDFILE" $exec -HUP
+        RETVAL=$?
+        echo
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        restart
+        ;;
+  reload)
+        reload
+        ;;
+  force-reload)
+        restart
+        ;;
+  status)
+        rhstatus
+        ;;
+  condrestart|try-restart)
+        rhstatus >/dev/null 2>&1 || exit 0
+        restart
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|condrestart|try-restart|reload|force-reload|status}"
+        exit 3
+esac
+
+exit $?

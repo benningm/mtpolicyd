@@ -1,0 +1,284 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+# VERSION
+# ABSTRACT: the mtpolicyd executable
+# PODNAME: mtpolicyd
+
+use Mail::MtPolicyd;
+
+Mail::MtPolicyd->run();
+
+=head1 NAME
+
+mtpolicyd - a modular policy daemon for postfix
+
+=head1 DESCRIPTION
+
+mtpolicyd is a policy daemon for postfix access delegation.
+
+It can be configured to accept connections on several ports from a postfix mta.
+For each port a VirtualHost can be configured and for each VirtualHost serveral
+Plugins can be configured.
+
+=head1 EXAMPLE
+
+In postfix main.cf:
+
+  smtpd_recipient_restrictions = check_policy_service inet:127.0.0.1:12345
+
+In mtpolicyd.conf:
+
+  # listen on port 12345 (multiple ports can be seperated by ',')
+  port="127.0.0.1:12345"
+
+  # defined host for this port
+  <VirtualHost 12345>
+    name=example_vhost
+    <Plugin spamhaus_bl>
+      module="RBL"
+      domain="sbl.spamhaus.org"
+      mode=reject
+    </Plugin>
+
+This check will execute a simple RBL lookup against dbl.spamhaus.org.
+  </VirtualHost>
+
+=head1 COMMANDLINE OPTIONS
+
+  mtpolicyd
+    [-h|--help]
+    [-c|--config=<file>]
+    [-f|--foreground]
+    [-l|--loglevel=<level>]
+    [-d|--dump_vhosts]
+
+=over
+
+=item -h --help
+
+Show available command line options.
+
+=item -c --config=<file> (default: /etc/mtpolicyd/mtpolicyd.conf)
+
+Specifiy the path to the configuration file.
+
+=item -f --foreground
+
+Do not fork to background and log to stdout.
+
+=item -l --loglevel=<level>
+
+Overwrite the log level specified in the configuration with the specified level.
+
+=item -d --dump_vhosts
+
+Parse VirtualHosts configuration, print it to stdout and exit.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+The configuration file is implementend with L<Config::General> which allows apache style
+configuration files.
+
+mtpolicyd accepts global configuration parameters in the style:
+
+  key=value
+
+Comments begin with '#'.
+
+VirtualHosts must be configured with VirtualHost sections:
+
+  <VirtualHost <portnumber>>
+    name=<name of the vhost>
+  </VirtualHost>
+
+Each VirtualHost should contain at least on Plugin.
+
+  <VirtualHost <portnumber>>
+    name=<name of the vhost>
+    <Plugin <name of check> >
+      module = "<name of plugin>"
+      # plugin options
+      key=value
+    </Plugin>
+  </VirtualHost>
+
+For individual plugin configuration options see the man page of the plugin:
+
+  Mail::MtPolicyd::Plugin::<name of plugin>
+
+=head2 GLOBAL CONFIGURATION OPTIONS
+
+=over
+
+=item user
+
+user id to run as
+
+=item group
+
+group id to run as
+
+=item pid_file
+
+location of the pid file
+
+=item log_level
+
+Verbosity of logging: 0=>'err', 1=>'warning', 2=>'notice', 3=>'info', 4=>'debug'
+
+=item host
+
+ip address to bind to.
+
+=item port
+
+comma separated list of ports to listen on.
+
+=item min_servers (default: 4)
+
+The minimum number of client processes to start.
+
+=item min_spare_servers (default: 4)
+
+The minimum number of client processes that should hanging around idle
+and wait for new connections.
+
+If the number of free processes is below this threshold mtpolicyd will start
+to create new child processes.
+
+=item max_spare_servers (default: 12)
+
+The maximum number of idle processes.
+
+If the number of idle processes is over this threshold mtpolicyd will start
+to shutdown child processes.
+
+=item max_servers (default: 25)
+
+The absolut maximum number of child processes to start.
+
+=item max_requests (default: 1000)
+
+=item max_keepalive (default: 0)
+
+Number of requests after that mtpolicyd closes the connection
+or no limit if set to zero.
+
+Should be the same value as smtpd_policy_service_reuse_count_limit (postfix >2.12)
+in postfix/smtpd configuration.
+
+=item request_timeout
+
+Maximum total time for one request.
+
+=item db_dsn
+
+Connection string for the database in perl-DBI format. See L<DBI>.
+
+  db_dsn="dbi:mysql:mail"
+
+=item db_user
+
+Name of database user.
+
+=item db_password
+
+Password of database user.
+
+=item memcached_servers
+
+A comma seperated list of memcached servers used for session tracking.
+
+  memcached_servers="127.0.0.1:11211"
+
+=item memcached_namespace (default: mt-)
+
+Use a namespace for storing sessions in memcached 
+
+=item memcached_expire (default: 300 seconds)
+
+Expire time for memcached entries.
+
+=item session_lock_wait (default: 50 usec)
+
+Time to wait before retry to acquire lock on a session object.
+
+Will be increased with every try. (50,100,150,...)
+
+=item session_lock_max_retry (default: 50 times)
+
+Number of maximum retries for acquiring a session lock.
+
+=item session_lock_timeout (default: 10 seconds)
+
+After this timeout the lock will destroy itself.
+
+=back
+
+=head1 SESSION MANAGEMENT
+
+mtpolicyd uses a session managemend based on memcached.
+
+mtpolicy will generate a session for each mail passed to it and store it within memcached.
+The attached session information will be available to all following plugins across
+child processes, virtual hosts and ports.
+
+Plugins will use this session information to cache lookup etc. across multiple requests
+for the same mail. Postfix will send a query for each recipient and for each configured
+check_policy_service call.
+
+=head1 PROCESSING OF REQUEST
+
+The policy daemon will process all plugins in the order they appear in the configuration file.
+It will stop as soon as a plugin returns an action and will return this action to the MTA.
+
+=head1 SCORING
+
+Most plugins can be configured to not return an action if the performed check matched.
+
+For example the RBL module could be set to passive mode and instead a score could be applied
+to the request:
+
+  <Plugin spamhaus>
+    module = "RBL"
+    mode = "passive"
+    domain="zen.spamhaus.org"
+    score=5
+  </Plugin>
+
+Check the documentation of the plugin for certain score/mode parameters.
+Plugin may provide more than one mode/score parameters if the do several checks.
+
+Now if you configure more than one RBL check the score will add up.
+Later an action can be taken based on the score.
+The ScoreAction plugin will return an action based on the score
+and the AddScoreHeader plugin will prepend the score as a header to the mail:
+
+  <Plugin ScoreReject>
+    module = "ScoreAction"
+    threshold = 15
+    action = "reject sender ip %IP% is blocked (score=%SCORE%%SCORE_DETAIL%)"
+  </Plugin>
+  <Plugin ScoreTag>
+    module = "AddScoreHeader"
+    spam_score=5
+  </Plugin>
+
+=head1 DATABASE CONFIGURATION
+
+If you configure a database this database connection will be available to plugins.
+For example the SqlList plugin can be used to implement a black or white list based on
+an SQL query. Or the SqlUserConfig plugin could be used to query a database for additional
+configuration options.
+
+  db_dsn=DBI:mysql:mtpolicyd
+  db_user=user
+  db_password=password
+
+=cut
+

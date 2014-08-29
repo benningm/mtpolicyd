@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ "$1" = configure ]; then
+	lastversion="$2";
+	
+	getent group mtpolicyd >/dev/null 2>&1 || addgroup --system mtpolicyd
+	getent passwd mtpolicyd >/dev/null 2>&1 ||
+	adduser --system --home /var/run/mtpolicyd --no-create-home \
+                --disabled-password --ingroup mtpolicyd mtpolicyd
+
+	chown mtpolicyd.mtpolicyd /var/run/mtpolicyd
+fi
+

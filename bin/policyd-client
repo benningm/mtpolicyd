@@ -1,0 +1,44 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+# VERSION
+# ABSTRACT: commandline client to query a policyd server
+# PODNAME: policyd-client
+
+=head1 DESCRIPTION
+
+policyd-client is a rudimentary tool to query a policy server from the command line.
+It will generate the instance and request fields all other fields must be specified
+on stdin and the request is completed by a blank line.
+
+=head1 USAGE
+
+  policyd-client [-?hhksv] [long options...]
+        -h -? --usage --help  Prints this usage information.
+        -h --host            host:port of a policyd
+        -s --socket_path     path to a socket of a policyd
+        -k --keepalive       use connection keepalive?
+        -v --verbose         be verbose, print input/output to STDERR
+
+=head1 EXAMPLE
+
+  $ policyd-client -v -h localhost:12347
+  client_address=212.178.212.218
+
+  >> request=smtpd_access_policy
+  >> instance=0.133885340838791
+  >> client_address=212.178.212.218
+  >>
+  << action=reject IP is blacklisted
+  <<
+  reject IP is blddacklisted
+
+=cut
+
+use Mail::MtPolicyd::Client::App;
+
+my $app = Mail::MtPolicyd::Client::App->new_with_options();
+$app->run;
+

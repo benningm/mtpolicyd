@@ -1,0 +1,63 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:        mtpolicyd
+# Required-Start:  $network $remote_fs $syslog
+# Required-Stop:   $network $remote_fs $syslog
+# Default-Start:   2 3 4 5
+# Default-Stop: 
+# Short-Description: Start mtpolicyd daemon
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions
+
+DAEMON=/usr/bin/mtpolicyd
+PIDFILE=/var/run/mtpolicyd/mtpolicyd.pid
+RUNASUSER=mtpolicyd
+
+test -x $DAEMON || exit 5
+
+if [ -r /etc/default/mtpolicyd ]; then
+	. /etc/default/mtpolicyd
+fi
+
+case $1 in
+	start)
+		log_daemon_msg "Starting postfix policy server" "mtpolicyd"
+  		start-stop-daemon \
+			--start --quiet \
+			--oknodo --pidfile $PIDFILE --startas $DAEMON
+		status=$?
+		log_end_msg $status
+  		;;
+	stop)
+		log_daemon_msg "Stopping postfix policy server" "mtpolicyd"
+  		start-stop-daemon \
+			--stop --quiet \
+			--oknodo --pidfile $PIDFILE
+		log_end_msg $?
+		rm -f $PIDFILE
+  		;;
+	restart|force-reload)
+		$0 stop && sleep 2 && $0 start
+  		;;
+	try-restart)
+		if $0 status >/dev/null; then
+			$0 restart
+		else
+			exit 0
+		fi
+		;;
+	reload)
+		exit 3
+		;;
+	status)
+		status_of_proc $DAEMON "mtpolicyd daemon"
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|try-restart|force-reload|status}"
+		exit 2
+		;;
+esac
