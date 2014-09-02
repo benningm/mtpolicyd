@@ -3,13 +3,13 @@ Section: perl
 Priority: optional
 Maintainer: Markus Benning <ich@markusbenning.de>
 Build-Depends: debhelper (>= 8)
-Build-Depends-Indep: perl, libtest-mockobject-perl, libdbd-sqlite3-perl, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libwww-perl, libconfig-general-perl
+Build-Depends-Indep: perl, libtest-mockobject-perl, libdbd-sqlite3-perl, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libwww-perl, libconfig-general-perl, libtest-exception-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl
 Standards-Version: 3.9.2
 Homepage: http://search.cpan.org/dist/Mail-MtPolicyd/
 
 Package: mtpolicyd
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl
+Depends: ${misc:Depends}, ${perl:Depends}, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl
 Description: the Mailteam policy daemon for postfix
  mtpolicyd is a modular, configurable policy daemon for postfix with a plugin architecture.
  
