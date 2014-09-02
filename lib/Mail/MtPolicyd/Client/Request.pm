@@ -93,5 +93,19 @@ sub new_from_fh {
         return $obj;
 }
 
+sub new_proxy_request {
+        my ( $class, $r ) = ( shift, shift );
+	my %attr = %{$r->attributes};
+	delete($attr{'type'});
+	delete($attr{'instance'});
+
+        my $obj = $class->new(
+                'type' => $r->type,
+                'instance' => $r->attr('instance'),
+                'attributes' => \%attr,
+        );
+        return $obj;
+}
+
 1;
 
