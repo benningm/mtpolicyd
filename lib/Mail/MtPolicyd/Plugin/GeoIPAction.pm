@@ -29,7 +29,7 @@ Enable/disable this plugin.
 
 A comma seperated list of 2 letter country codes to match.
 
-=item mode (default: reject)
+=item (uc_)mode (default: reject)
 
 If set to 'passive' no action will be returned.
 
@@ -48,7 +48,7 @@ A score to apply to the message.
 extends 'Mail::MtPolicyd::Plugin';
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
-	'uc_attributes' => [ 'enabled' ],
+	'uc_attributes' => [ 'enabled', 'mode' ],
 };
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -84,8 +84,9 @@ sub run {
 	my ( $self, $r ) = @_;
 	my $ip = $r->attr('client_address');
 	my $session = $r->session;
-
+	my $mode = $self->get_uc( $session, 'mode' );
 	my $enabled = $self->get_uc( $session, 'enabled' );
+
 	if( $enabled eq 'off' ) {
 		return;
 	}
@@ -107,13 +108,13 @@ sub run {
 		$self->add_score($r, $self->name => $self->score);
 	}
 
-	if( $self->mode eq 'reject' ) {
+	if( $mode eq 'reject' ) {
 		return Mail::MtPolicyd::Plugin::Result->new(
 			action => $self->_get_reject_action($ip, $country_code ),
 			abort => 1,
 		);
 	}
-	if( $self->mode eq 'accept' ) {
+	if( $mode eq 'accept' || $mode eq 'dunno' ) {
 		return Mail::MtPolicyd::Plugin::Result->new_dunno;
 	}
 

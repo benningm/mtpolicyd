@@ -19,7 +19,7 @@ The services will return a status permfail or tempfail.
 extends 'Mail::MtPolicyd::Plugin';
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
-	'uc_attributes' => [ 'enabled' ],
+	'uc_attributes' => [ 'enabled', 'tempfail_mode', 'permfail_mode' ],
 };
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -51,7 +51,7 @@ This parameter could be used to specifiy a custom reject message if message is r
 
 This parameter could be used to specifiy a custom message is a message is to be defered.
 
-=item permfail_mode, tempfail_mode (default: reject, defer)
+=item (uc_)permfail_mode, (uc_)tempfail_mode (default: reject, defer)
 
 Action to take when the service return permfail/tempfail status:
 
@@ -143,13 +143,13 @@ sub run {
 		$self->log( $r, 'CtIpRep: sender IP is ok' );
 		return; # do nothing
 	} elsif( $result eq 'permfail' ) {
-		$mode = $self->permfail_mode;
+		$mode = $self->get_uc( $session, 'permfail_mode' );
 		if( $self->permfail_score 
 				&& ! $r->is_already_done($self->name.'-score') ) {
 			$self->add_score($r, $self->name => $self->permfail_score);
 		}
 	} elsif ($result eq 'tempfail' ) {
-		$mode = $self->tempfail_mode;
+		$mode = $self->get_uc( $session, 'tempfail_mode' );
 		if( $self->tempfail_score
 				&& ! $r->is_already_done($self->name.'-score') ) {
 			$self->add_score($r, $self->name => $self->tempfail_score);
@@ -165,11 +165,6 @@ sub run {
 			abort => 1,
 		);
 	}
-	if( $mode eq 'passive' || $mode eq 'accept' ) {
-		return; # do nothing
-	}
-
-	$self->log($r, 'unknown mode for CtIpRep: '.$mode);
 	return;
 }
 

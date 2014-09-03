@@ -20,7 +20,7 @@ Checks are implemented using the Mail::SPF perl module.
 
 Enable/disable the plugin.
 
-=item pass_mode (default: passive)
+=item (uc_)pass_mode (default: passive)
 
 How to behave if the SPF checks passed successfully:
 
@@ -40,7 +40,7 @@ Will return an 'dunno' action.
 
 Score to apply when the sender has been successfully checked against SPF.
 
-=item fail_mode (default: reject)
+=item (uc_)fail_mode (default: reject)
 
 =over
 
@@ -106,7 +106,7 @@ extends 'Mail::MtPolicyd::Plugin';
 
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
-	'uc_attributes' => [ 'enabled' ],
+	'uc_attributes' => [ 'enabled', 'fail_mode', 'pass_mode' ],
 };
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -141,8 +141,10 @@ has '_spf' => ( is => 'ro', isa => 'Mail::SPF::Server', lazy => 1,
 sub run {
 	my ( $self, $r ) = @_;
 	my $session = $r->session;
-
+	my $fail_mode = $self->get_uc($session, 'fail_mode');
+	my $pass_mode = $self->get_uc($session, 'pass_mode');
 	my $enabled = $self->get_uc($session, 'enabled');
+
 	if( $enabled eq 'off' ) {
 		return;
 	}
@@ -171,7 +173,7 @@ sub run {
 		if( defined $self->fail_score && ! $r->is_already_done($self->name.'-score') ) {
 			$self->add_score( $r, $self->name => $self->fail_score );
 		}
-		if( $self->fail_mode eq 'reject') {
+		if( $fail_mode eq 'reject') {
 			return Mail::MtPolicyd::Plugin::Result->new(
 				action => $self->_get_reject_action($result),
 				abort => 1,
@@ -183,7 +185,7 @@ sub run {
 		if( defined $self->pass_score && ! $r->is_already_done($self->name.'-score') ) {
 			$self->add_score( $r, $self->name => $self->pass_score );
 		}
-		if( $self->pass_mode eq 'accept' || $self->pass_mode eq 'dunno') {
+		if( $pass_mode eq 'accept' || $pass_mode eq 'dunno') {
 			return Mail::MtPolicyd::Plugin::Result->new_dunno;
 		}
 		return;

@@ -9,7 +9,8 @@ use namespace::autoclean;
 extends 'Mail::MtPolicyd::Plugin';
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
-	'uc_attributes' => [ 'enabled' ],
+	'uc_attributes' => [ 'enabled', 'sender_mode', 'helo_mode',
+		'reverse_client_name_mode' ],
 };
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -38,11 +39,11 @@ Possible values: on,off
 
 If specified the give variable within the session will overwrite the value of 'enabled' if set.
 
-=item sender_mode (default: reject)
+=item (uc_)sender_mode (default: reject)
 
-=item helo_mode (default: passive)
+=item (uc_)helo_mode (default: passive)
 
-=item reverse_client_name_mode (default: reject)
+=item (uc_)reverse_client_name_mode (default: reject)
 
 Should the plugin return an reject if the check matches (reject) or
 just add an score (passive).
@@ -141,8 +142,8 @@ sub run {
 			$self->add_score($r, $self->name.'-'.$check => $self->$score_attr );
 		}
 
-		my $mode_field = $check.'_mode';
-		if( $self->$mode_field eq 'reject' ) {
+		my $mode = $self->get_uc( $session, $check.'_mode' );
+		if( $mode eq 'reject' ) {
 			return Mail::MtPolicyd::Plugin::Result->new(
 				action => $self->_get_reject_action($check, $hostname, $info),
 				abort => 1,
