@@ -4,7 +4,7 @@ use strict;
 use base qw(Net::Server::PreFork);
 
 # VERSION
-# ABSTRACT: the Mailteam policy daemon for postfix
+# ABSTRACT: a modular policy daemon for postfix
 
 use Data::Dumper;
 use Mail::MtPolicyd::Request;
@@ -19,7 +19,7 @@ use IO::Handle;
  
 =head1 DESCRIPTION
 
-The mailteams postfix policy daemon
+Mail::MtPolicyd is the Net::Server class of the mtpolicyd daemon.
 
 =head2 SYNOPSIS
 
@@ -131,12 +131,7 @@ sub configure {
 
 	$server->{'proto'} = 'tcp';
 	$server->{'host'} = '127.0.0.1';
-	$server->{'port'} = [
-		'127.0.0.1:12345',
-		'127.0.0.1:12346',
-		'127.0.0.1:12347',
-		'127.0.0.1:12348',
-	];
+	$server->{'port'} = [ '127.0.0.1:12345' ];
 
 	$server->{'min_servers'} = 4;
         $server->{'min_spare_servers'} = 4;
@@ -149,7 +144,7 @@ sub configure {
 	$self->{'keepalive_timeout'} = 60;
 	$self->{'max_keepalive'} = 0;
 
-	$self->{'db_dsn'} = 'dbi:mysql:mail';
+	$self->{'db_dsn'} = undef;
 	$self->{'db_user'} = '';
 	$self->{'db_password'} = '';
 

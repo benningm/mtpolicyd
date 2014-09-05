@@ -93,6 +93,28 @@ sub dump_attr {
 An object constructor for creating an request object with the content read
 for the supplied filehandle $fh.
 
+Will die if am error ocours:
+
+=over
+
+=item error parsing request
+
+A line in the request could not be parsed.
+
+=item while reading request: <io-error>
+
+The filehandle had an error while reading the request.
+
+=item connection closed by peer
+
+Connection has been closed while reading the request.
+
+=item could not parse request
+
+The client did not send a complete request.
+
+=back
+
 =cut
 
 sub new_from_fh {

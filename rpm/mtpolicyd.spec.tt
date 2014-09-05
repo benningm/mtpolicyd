@@ -62,13 +62,15 @@ fi
 rm -rf $RPM_BUILD_ROOT
 
 %pre
-( /usr/sbin/useradd \
-	-c 'mtpolicyd daemon' \
-	-d /var/run/mtpolicyd \
-	-M -r \
-	 -s /bin/false \
-	-U \
-	mtpolicyd 2>&1 >/dev/null || exit 0 )
+( /usr/sbin/groupadd \
+        -r mtpolicyd \
+        && /usr/sbin/useradd \
+        -c 'mtpolicyd daemon' \
+        -d /var/run/mtpolicyd \
+        -M -r \
+         -s /bin/false \
+        -g mtpolicyd \
+        mtpolicyd 2>&1 >/dev/null || exit 0 )
 
 %post
 /sbin/chkconfig --add mtpolicyd

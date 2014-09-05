@@ -1,0 +1,70 @@
+# PODNAME: Mail::MtPolicyd::Cookbook::Installation
+# ABSTRACT: How to install mtpolicyd
+
+=head1 GET STARTED WITH BASIC MTPOLICYD INSTALLATION
+
+=head2 INSTALLATION
+
+=head3 INSTALL MTPOLICYD PACKAGE
+
+There are prebuild packages of mtpolicyd available for serveral linux distributions. The easiest way is to install mtpolicyd by installing the package build for your distribution.
+
+Installing the package will create a system user/group mtpolicyd on your system, an init script and a default configuration.
+
+After installing the package you should be able to start mtpolicyd by just executing the startup script:
+
+  /etc/init.d/mtpolicyd start
+
+=head3 INSTALL MTPOLICYD FROM CPAN
+
+=head2 TEST MTPOLICYD
+
+Now the daemon should be up:
+
+  $ ps -u mtpolicyd f
+    PID TTY      STAT   TIME COMMAND
+   2566 ?        Ss     0:12 /usr/bin/mtpolicyd (master)
+   2731 ?        S      0:28  \_ /usr/bin/mtpolicyd (idle)
+  19464 ?        S      0:26  \_ /usr/bin/mtpolicyd (idle)
+  28858 ?        S      0:26  \_ /usr/bin/mtpolicyd (idle)
+  32372 ?        S      0:24  \_ /usr/bin/mtpolicyd (idle)
+
+And it should be listening on localhost:12345:
+
+  $ netstat -aenpt | grep :12345
+  tcp        0      0 127.0.0.1:12345         0.0.0.0:*               LISTEN      0          17333578    -
+
+Now test it with a simple query:
+
+  $ policyd-client -h localhost:12345
+
+Paste the following request to the command:
+
+  reverse_client_name=smtp.google.com
+  sender=bob@gmail.com
+  client_address=192.168.1.1
+  recipient=ich@markusbenning.de
+  helo_name=smtp.google.com
+
+Terminate the request by a blank line. Just press enter.
+
+The mtpolicyd should respond with a action like:
+
+  PREPEND X-MtScore: NO score
+
+=head2 ADD A MTPOLICYD QUERY TO YOUR POSTFIX SMTPD
+
+Open you postfix main.cf configuration file in a text editor. It should be located below /etc/postfix.
+
+Add a 'check_policyd_service inet:127.0.0.1:12345' check to your smtpd_recipient_restrictions:
+
+  smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, check_policy_service inet:127.0.0.1:12345
+
+Now restart postfix. Now follow your maillog as new mails arrive. There should be a mtpolicyd line for every query.
+
+=head2 CONGRATULATIONS
+
+Your mtpolicyd is now configured and running with the default configuration.
+
+You may now want to continue with reading L<Mail::MtPolicyd::Cookbook::DefaultConfig> which explains what the default configuration does.
+

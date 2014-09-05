@@ -1,0 +1,37 @@
+# PODNAME: Mail::MtPolicyd::Cookbook
+# ABSTRACT: How to cook with mtpolicyd
+
+=head1 DESCRIPTION
+
+The mtpolicyd cookbook is a series of guides for learning mtpolicyd.
+
+=head1 RECIPES
+
+=head2 BASICS
+
+=over
+
+=item L<Mail::MtPolicyd::Cookbook::Installation>
+
+How to do a basic installation of mtpolicyd in postfix.
+
+=item L<Mail::MtPolicyd::Cookbook::DefaultConfig>
+
+Explains the default configuration that mtpolicyd comes with.
+
+=back
+
+=head2 PLUGIN DEVELOPMENT
+
+=over
+
+=item L<Mail::MtPolicyd::Cookbook::BasicPlugin>
+
+How to write your own mtpolicyd plugin.
+
+=item L<Mail::MtPolicyd::Cookbook::ExtendedPlugin>
+
+This receipt shows how to achieve tasks like scoring, per user configuration, SQL database queries, caching.
+
+=back
+

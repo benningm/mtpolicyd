@@ -154,7 +154,7 @@ sub run {
 	my $helo = $r->attr('helo_name');
 
 	if( ! defined $ip || ! defined $sender || ! defined $helo ) {
-		$self->logdie('request atttributes client_address, sender, helo_name required!');
+		die('request atttributes client_address, sender, helo_name required!');
 	}
 
 	my $request = Mail::SPF::Request->new(
