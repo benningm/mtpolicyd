@@ -1,0 +1,87 @@
+# PODNAME: Mail::Mtpolicyd::Cookbook::BasicModule
+# ABSTRACT: how to write your own mtpolicyd plugin
+
+=head1 How to write your own mtpolicyd plugin
+
+mtpolicyd makes use of L<Moose>. If you're not yet familiar with L<Moose> you should start reading the L<Moose::Intro> first.
+
+=head2 Basic skeleton of a mtpolicyd plugin
+
+A plugin in mtpolicyd is basicly a class which inherits from L<Mail::MtPolicyd::Plugin> and is located below the Mail::MtPolicyd::Plugin:: namespace:
+
+  package Mail::MtPolicyd::Plugin::HelloWorld;
+
+  use Moose;
+  use namespace::autoclean;
+
+  # VERSION
+  # ABSTRACT: a mtpolicyd plugin which just returns a hello world reject
+
+  extends 'Mail::MtPolicyd::Plugin';
+
+  use Mail::MtPolicyd::Plugin::Result;
+
+  sub run {
+    my ( $self, $r ) = @_;
+
+    return Mail::MtPolicyd::Plugin::Result->new(
+      action => 'reject Hello World!',
+      abort => 1,
+    );
+  }
+
+  __PACKAGE__->meta->make_immutable;
+
+  1;
+
+Every plugin must implement a run() method. mtpolicyd will call run() everytime your module is called from the configuration to process a request.
+A L<Mail::MtPolicyd::Request> object containing the current request is passed to the method.
+The run() method must return undef or a <Mail::MtPolicyd::Plugin::Result> object.
+If undef is return mtpolicyd will continue with the next plugin.
+If a result is returned mtpolicyd will push the result to the list of results and abort processing the request if abort is set.
+
+After you placed the module with your lib search path you should be able to use the plugin within mtpolicyd.conf:
+
+  <Plugin hello-world>
+    module = "HelloWorld"
+  </Plugin>
+
+For now our plugin will just return an "reject Hello World!" action to the MTA.
+
+=head2 Adding configuration options
+
+All options defined in the configuration file will be passed to the object constructor new() when creating an object of your plugin class.
+
+The parameter "module" is not passed to the object constructor because it contains the name of your class.
+
+You can defined configuration parameters by adding attributes to your class.
+
+You're class already inherits 2 attributes from the Plugin base class:
+
+=over
+
+=item name
+
+Which contains the name of your <Plugin> section.
+
+=item log_level
+
+Which contains the level used when your plugin calls $self->log( $r, '...');.
+
+=back
+
+Add a new attribute to your plugin class:
+
+  has 'text' => ( is => 'rw', isa => 'Str', default => 'Hello World!');
+
+Return this string instead of the hard coded string:
+
+      action => 'reject '.$self->text,
+
+The string is now configurable from the config:
+
+  <Plugin hello-world>
+    module = "HelloWorld"
+    text = "Hello Universe!"
+  </Plugin>
+
