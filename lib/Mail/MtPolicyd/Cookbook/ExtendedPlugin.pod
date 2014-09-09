@@ -1,4 +1,4 @@
-# PODNAME: Mail::Mtpolicyd::Cookbook::ExtendedModule
+# PODNAME: Mail::MtPolicyd::Cookbook::ExtendedModule
 # ABSTRACT: how to archieve certain tasks within a plugin
 
 =head1 Extending your mtpolicyd plugin
