@@ -53,4 +53,83 @@ The example above will add a new score to the scoring, but only once per mail si
 
 =head2 Use scoring
 
+To add scoring to your plugin your plugin needs to consume the role L<Mail::MtPolicyd::Plugin::Role::Scoring>.
+
+This will add the method add_score( $r, $key, $value ) to your plugin class.
+
+The $key is a name for the score you'll see when you display the detailed scores. eg. with the AddScoreHeader or ScoreAction plugin.
+
+The $value is positive or negative number. In most cases you want to make this value configurable.
+
+It is also recommended that you check that you add an score only once. See is_already_done() method above.
+
+Here is an example:
+
+  with 'Mail::MtPolicyd::Plugin::Role::Scoring';
+
+  has 'score' => ( is => 'rw', isa => 'Maybe[Num]' );
+
+And somewhere in your run() method:
+
+  if( defined $self->score && ! $r->is_already_done( $self->name.'-score' ) ) {
+    $self->add_score( $r, $self->name => $self->score );
+  }
+
+=head2 Make a configuration value user-configurable
+
+To add user configurable parameters to your plugin the class must consume the L<Mail::MtPolicyd::Plugin::Role::UserConfig> role.
+
+  with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
+    'uc_attributes' => [ 'enabled', 'mode' ],
+  };
+
+The regular attributes:
+
+  has 'enabled' => ( is => 'rw', isa => 'Str', default => 'on' );
+  has 'mode' => ( is => 'rw', isa => 'Str', default => 'reject' );
+
+The UserConfig role adds the get_uc( $session, $param ) method to your class. To retrieve the user-configurable values for this attributes use:
+
+  my $session = $r->session;
+  my $mode = $self->get_uc( $session, 'mode' );
+  my $enabled = $self->get_uc( $session, 'enabled' );
+
+Per user configuration in mtpolicyd works like this:
+
+=over
+
+=item Retrieve configuration values and store them in the session
+
+A plugin like SqlUserConfig retrieves configuration values and stores them in the current session.
+
+For example it may set the following key value:
+
+  hello_world_enabled = off
+
+=item A Plugin with user configurable parameters
+
+Our HelloWorld plugin may be configured like this:
+
+  <Plugin hello-world>
+  	module = "HelloWorld"
+	enabled = on
+	uc_enabled = "hello_world_enabled"
+  </Plugin>
+
+If the key "hello_world_enabled" is defined in the session it will use its value for $mode.
+If it is not defined it will fall back to value of the "enabled" attribute.
+
+=back
+
+=head2 Set a mail header
+
+The L<Mail::MtPolicyd::Plugin::Result> object has an extra constructor for returning a PREPEND action for setting a header:
+
+  Mail::MtPolicyd::Plugin::Result->new_header_once( $is_already_done, $header_name, $value );
+
+It could be used like this:
+
+  return Mail::MtPolicyd::Plugin::Result->new_header_once(
+    $r->is_already_done( $self->name.'-tag' ),
+    $header_name, $value );
 
