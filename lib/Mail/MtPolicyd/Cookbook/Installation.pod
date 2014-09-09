@@ -6,7 +6,7 @@
 =head2 INSTALL MEMCACHED
 
 memcached is required for mtpolicyd. A package of memcached should come with your os distribution.
-On Debian based distribution it can be installed by:
+On Debian based distributions it can be installed by:
 
   apt-get install memcached
 
@@ -20,7 +20,7 @@ Start the memcached service
 
 =head2 INSTALL MTPOLICYD
 
-=head3 FROM PACKAGE
+=head3 FROM PACKAGE (RECOMMENDED)
 
 There are prebuild packages of mtpolicyd available for serveral linux distributions. The easiest way is to install mtpolicyd by installing the package build for your distribution.
 
