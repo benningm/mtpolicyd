@@ -3,11 +3,28 @@
 
 =head1 GET STARTED WITH BASIC MTPOLICYD INSTALLATION
 
-=head2 INSTALLATION
+=head2 INSTALL MEMCACHED
 
-=head3 INSTALL MTPOLICYD PACKAGE
+memcached is required for mtpolicyd. A package of memcached should come with your os distribution.
+On Debian based distributions it can be installed by:
+
+  apt-get install memcached
+
+Check /etc/default/memcached if the service is enabled:
+
+  ENABLE_MEMCACHED=yes
+
+Start the memcached service
+
+  /etc/init.d/memcached start
+
+=head2 INSTALL MTPOLICYD
+
+=head3 FROM PACKAGE (RECOMMENDED)
 
 There are prebuild packages of mtpolicyd available for serveral linux distributions. The easiest way is to install mtpolicyd by installing the package build for your distribution.
+
+You can download the packages at: http://www.mtpolicyd.org/download.html
 
 Installing the package will create a system user/group mtpolicyd on your system, an init script and a default configuration.
 
@@ -15,7 +32,21 @@ After installing the package you should be able to start mtpolicyd by just execu
 
   /etc/init.d/mtpolicyd start
 
-=head3 INSTALL MTPOLICYD FROM CPAN
+=head3 FROM SOURCE/CPAN
+
+Since mtpolicyd source is shipped as a perl/CPAN package it could be installed from CPAN. To install the Mail::Mtpolicyd package with all dependencies required make sure you have installed cpanminus:
+
+  apt-get install cpanminus
+
+Then install the Mail::Mtpolicyd distribution with:
+
+  cpanm Mail::MtPolicyd
+
+It is recommended to create an system user and group for the daemon.
+
+You can get a default configuration file etc/mtpolicyd.conf from the tarball.
+
+The init scripts for the debian packages are located at debian/mtpolicyd.init and for redhat systems at rpm/mtpolicyd.init within the tarball.
 
 =head2 TEST MTPOLICYD
 
@@ -56,7 +87,7 @@ The mtpolicyd should respond with a action like:
 
 Open you postfix main.cf configuration file in a text editor. It should be located below /etc/postfix.
 
-Add a 'check_policyd_service inet:127.0.0.1:12345' check to your smtpd_recipient_restrictions:
+Add a 'check_policyd_service inet:127.0.0.1:12345' check to your smtpd_recipient_restrictions. It should look like this one:
 
   smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, check_policy_service inet:127.0.0.1:12345
 
