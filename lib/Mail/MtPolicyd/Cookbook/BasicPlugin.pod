@@ -1,4 +1,4 @@
-# PODNAME: Mail::Mtpolicyd::Cookbook::BasicModule
+# PODNAME: Mail::MtPolicyd::Cookbook::BasicModule
 # ABSTRACT: how to write your own mtpolicyd plugin
 
 =head1 How to write your own mtpolicyd plugin
