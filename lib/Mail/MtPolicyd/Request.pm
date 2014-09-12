@@ -125,7 +125,7 @@ sub new_from_fh {
 	while( defined( $line = $fh->getline ) ) {
 		$line =~ s/\r?\n$//;
 		if( $line eq '') { $complete = 1 ; last; }
-		my ( $name, $value ) = split('=', $line);
+		my ( $name, $value ) = split('=', $line, 2);
 		if( ! defined $value ) {
 			die('error parsing request');
 		}
