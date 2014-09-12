@@ -153,15 +153,15 @@ sub run {
 	my $sender = $r->attr('sender');
 	my $helo = $r->attr('helo_name');
 
-	if( ! defined $ip || ! defined $sender || ! defined $helo ) {
-		die('request atttributes client_address, sender, helo_name required!');
+	if( ! defined $ip || ! defined $sender || ! length($sender) ) {
+		die('request atttributes client_address, sender required!');
 	}
 
 	my $request = Mail::SPF::Request->new(
 		scope => 'mfrom',
 		identity => $sender,
 		ip_address  => $ip,
-		helo_identity => $helo,
+		defined $helo && length($helo) ? ( helo_identity => $helo ) : (),
 	);
 	my $result = $self->_spf->process($request);
 
