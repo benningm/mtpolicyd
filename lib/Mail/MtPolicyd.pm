@@ -7,6 +7,7 @@ use base qw(Net::Server::PreFork);
 # ABSTRACT: a modular policy daemon for postfix
 
 use Data::Dumper;
+use Mail::MtPolicyd::Profiler;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::VirtualHost;
 use DBI;
@@ -360,10 +361,10 @@ sub get_dbh {
 	return( $self->{'dbh'} );
 }
 
-sub _is_debug {
-	my $self = shift;
+sub _is_loglevel {
+	my ( $self, $level ) = @_;
 	if( $self->{'server'}->{'log_level'} &&
-			$self->{'server'}->{'log_level'} >= 4 ) {
+			$self->{'server'}->{'log_level'} >= $level ) {
 		return(1);
 	}
 	return(0);
@@ -381,13 +382,15 @@ sub _process_one_request {
 		my $timeout = $self->{'request_timeout'};
 		alarm($timeout);
 
-		if( $self->_is_debug ) { $self->log(4, 'request: '.$r->dump_attr); }
+		if( $self->_is_loglevel(4) ) { $self->log(4, 'request: '.$r->dump_attr); }
 		my $instance = $r->attr('instance');
 
+        Mail::MtPolicyd::Profiler->tick('retrieve session');
 		$s = $self->retrieve_session($instance);
-		if( $self->_is_debug ) { $self->log(4, 'session: '.Dumper($s)); }
+		if( $self->_is_loglevel(4) ) { $self->log(4, 'session: '.Dumper($s)); }
 		$r->session($s);
 
+        Mail::MtPolicyd::Profiler->tick('run vhost');
 		my $result = $vhost->run($r);
 
 		my $response = $result->as_policyd_response;
@@ -422,10 +425,12 @@ sub process_request {
 			; $alive_count++ ) {
 		my $r;
 		$self->_set_process_stat($vhost->name.', waiting request');
+        Mail::MtPolicyd::Profiler->reset;
 		eval {
 			local $SIG{'ALRM'} = sub { die "Keepalive connection timeout" };
 			my $timeout = $self->{'keepalive_timeout'};
 			alarm($timeout);
+            Mail::MtPolicyd::Profiler->tick('parsing request');
 			$r = Mail::MtPolicyd::Request->new_from_fh( $conn, 'server' => $self );
 		};
 		if ( $@ =~ /Keepalive connection timeout/ ) {
@@ -439,6 +444,7 @@ sub process_request {
 			last;
 		
 		}
+        Mail::MtPolicyd::Profiler->tick('processing request');
 		$self->_set_process_stat($vhost->name.', processing request');
 		eval { 
 			$self->_process_one_request( $conn, $vhost, $r );
@@ -450,6 +456,10 @@ sub process_request {
 			$self->log(0, 'error while processing request: '.$@);
 			last;
 		}
+        Mail::MtPolicyd::Profiler->stop;
+	    if( $self->_is_loglevel(3) ) {
+            $self->log(3, Mail::MtPolicyd::Profiler->to_string);
+        }
 	}
 
 	$self->log(3, '['.$port.']: closing connection');

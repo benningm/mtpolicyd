@@ -6,6 +6,7 @@ use namespace::autoclean;
 # VERSION
 # ABSTRACT: class for a VirtualHost instance
 
+use Mail::MtPolicyd::Profiler;
 use Mail::MtPolicyd::Result;
 
 has 'plugins' => (
@@ -30,7 +31,9 @@ sub run {
 
 	foreach my $plugin ( @{$self->plugins} ) {
 		my $abort = 0;
+        Mail::MtPolicyd::Profiler->new_timer('plugin '.$plugin->name);
 		my @plugin_results = $plugin->run($r);
+        Mail::MtPolicyd::Profiler->stop_current_timer;
 		foreach my $plugin_result ( @plugin_results ) {
 			$result->add_plugin_result($plugin_result);
 			if( $plugin_result->abort ) {
