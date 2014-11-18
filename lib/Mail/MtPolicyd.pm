@@ -456,9 +456,9 @@ sub process_request {
 			$self->log(0, 'error while processing request: '.$@);
 			last;
 		}
-        Mail::MtPolicyd::Profiler->stop;
-	    if( $self->_is_loglevel(3) ) {
-            $self->log(3, Mail::MtPolicyd::Profiler->to_string);
+        Mail::MtPolicyd::Profiler->stop_current_timer;
+	    if( $self->_is_loglevel(4) ) {
+            $self->log(4, Mail::MtPolicyd::Profiler->to_string);
         }
 	}
 
