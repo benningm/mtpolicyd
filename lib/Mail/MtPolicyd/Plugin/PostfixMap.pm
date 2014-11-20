@@ -27,7 +27,7 @@ use BerkeleyDB::Hash;
 
   <Plugin blacklist>
     moduel="PostfixMap"
-    db_file="/etc/postfix/whitelist.db"
+    db_file="/etc/postfix/blacklist.db"
     match_action="reject you are blacklisted!"
   </Plugin>
 
