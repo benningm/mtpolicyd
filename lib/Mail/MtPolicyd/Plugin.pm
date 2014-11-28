@@ -22,6 +22,8 @@ has 'name' => ( is => 'rw', isa => 'Str', required => 1 );
 has 'log_level' => ( is => 'ro', isa => 'Int', default => 4 );
 has 'vhost_name' => ( is => 'ro', isa => 'Maybe[Str]' );
 
+has 'on_error' => ( is => 'ro', isa => 'Maybe[Str]' );
+
 =head1 METHODS
 
 =head2 run( $r )

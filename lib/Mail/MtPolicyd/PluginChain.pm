@@ -32,7 +32,15 @@ sub run {
 	foreach my $plugin ( @{$self->plugins} ) {
 		my $abort = 0;
         Mail::MtPolicyd::Profiler->new_timer('plugin '.$plugin->name);
-		my @plugin_results = $plugin->run($r);
+        eval { my @plugin_results = $plugin->run($r); };
+        my $e = $@;
+        if( $e ) {
+            my $msg = 'plugin '.$plugin->name.' failed: '.$e;
+            if( ! defined $plugin->on_error || $plugin->on_error ne 'continue' ) {
+                die($msg);
+            }
+            $r->log(0, $msg);
+        }
         Mail::MtPolicyd::Profiler->stop_current_timer;
 		foreach my $plugin_result ( @plugin_results ) {
 			$result->add_plugin_result($plugin_result);
