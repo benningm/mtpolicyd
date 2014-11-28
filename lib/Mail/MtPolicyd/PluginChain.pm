@@ -32,7 +32,8 @@ sub run {
 	foreach my $plugin ( @{$self->plugins} ) {
 		my $abort = 0;
         Mail::MtPolicyd::Profiler->new_timer('plugin '.$plugin->name);
-        eval { my @plugin_results = $plugin->run($r); };
+        my @plugin_results;
+        eval { @plugin_results = $plugin->run($r); };
         my $e = $@;
         if( $e ) {
             my $msg = 'plugin '.$plugin->name.' failed: '.$e;

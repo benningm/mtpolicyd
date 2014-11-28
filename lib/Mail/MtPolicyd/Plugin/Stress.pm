@@ -56,7 +56,7 @@ has 'action' => ( is => 'rw', isa => 'Maybe[Str]' );
 
 sub run {
 	my ( $self, $r ) = @_;
-
+	my $session = $r->session;
 	my $stress = $r->attr('stress');
 
 	if( defined $stress && $stress eq 'yes' ) {
