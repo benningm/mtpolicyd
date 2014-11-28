@@ -56,17 +56,23 @@ The parameter "module" is not passed to the object constructor because it contai
 
 You can defined configuration parameters by adding attributes to your class.
 
-You're class already inherits 2 attributes from the Plugin base class:
+You're class already inherits 3 attributes from the Plugin base class:
 
 =over
 
-=item name
+=item name (required)
 
 Which contains the name of your <Plugin> section.
 
-=item log_level
+=item log_level (default: 4)
 
 Which contains the level used when your plugin calls $self->log( $r, '...');.
+
+=item on_error (default: undef)
+
+Tells mtpolicyd what to do when the plugin dies.
+
+If set to "continue" mtpolicyd will continue processing and just leaves a line in the log.
 
 =back
 
