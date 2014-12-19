@@ -92,7 +92,9 @@ sub configure {
 	
 	return if(@_);
 
-	$server->{'config_file'} = '/etc/mtpolicyd/mtpolicyd.conf';
+    if( ! defined $server->{'config_file'} ) {
+   	    $server->{'config_file'} = '/etc/mtpolicyd/mtpolicyd.conf';
+    }
 	$server->{'background'} = 1;
 	$server->{'setsid'} = 1;
 	$server->{'no_close_by_child'} = 1;
@@ -120,11 +122,10 @@ sub configure {
 	}
 
 	# DEFAULTS
-	$server->{'user'} = 'nobody';
-	$server->{'group'} = 'nobody';
-
-	$server->{'log_level'} = 2;
-	if( ! $cmdline->{'foreground'} ) {
+    if( ! defined $server->{'log_level'} ) {
+	    $server->{'log_level'} = 2;
+    }
+	if( ! defined $server->{'log_file'} && ! $cmdline->{'foreground'} ) {
 		$server->{'log_file'} = 'Sys::Syslog';
 	}
 	$server->{'syslog_ident'} = 'mtpolicyd';
@@ -132,7 +133,9 @@ sub configure {
 
 	$server->{'proto'} = 'tcp';
 	$server->{'host'} = '127.0.0.1';
-	$server->{'port'} = [ '127.0.0.1:12345' ];
+    if( ! defined $server->{'port'} ) {
+    	$server->{'port'} = [ '127.0.0.1:12345' ];
+    }
 
 	$server->{'min_servers'} = 4;
         $server->{'min_spare_servers'} = 4;
