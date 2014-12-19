@@ -154,7 +154,8 @@ sub run {
 	my $helo = $r->attr('helo_name');
 
 	if( ! defined $ip || ! defined $sender || ! length($sender) ) {
-		die('request atttributes client_address, sender required!');
+		$self->log( $r, 'cant check SPF without client_address and sender');
+		return;
 	}
 
 	my $request = Mail::SPF::Request->new(
