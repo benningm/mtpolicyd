@@ -48,11 +48,11 @@ my $result;
 lives_ok { $result = $p->run($r); } 'execute request';
 is( $result, undef, 'should not match' );
 
-# in hope that this ip stays "bad"
-$r->attributes->{'client_address'} = '201.216.207.129';
+# XBL test address
+$r->attributes->{'client_address'} = '127.0.0.4';
 lives_ok { $result = $p->run($r); } 'execute request';
 isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
-like( $result->action, qr/reject delivery from 201.216.207.129 rejected \("http:\/\/www.spamhaus.org\/query\/bl\?ip=201.216.207.129"\)/, 'should return a reject action' );
+like( $result->action, qr/reject delivery from 127.0.0.4 rejected \("http:\/\/www.spamhaus.org\/query\/bl\?ip=127.0.0.4"\)/, 'should return a reject action' );
 
 is($session->{'score'}, 5, 'score should be 5');
 
@@ -65,7 +65,7 @@ is( $result, undef, 'should do nothing' );
 $session->{'spamhaus'} = 'on';
 lives_ok { $result = $p->run($r); } 'execute request';
 isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
-like( $result->action, qr/reject delivery from 201.216.207.129 rejected \("http:\/\/www.spamhaus.org\/query\/bl\?ip=201.216.207.129"\)/, 'should return a reject action' );
+like( $result->action, qr/reject delivery from 127.0.0.4 rejected \("http:\/\/www.spamhaus.org\/query\/bl\?ip=127.0.0.4"\)/, 'should return a reject action' );
 is($session->{'score'}, 10, 'score should be 10');
 
 $p->mode('passive');
@@ -93,6 +93,6 @@ $p->re_match('^127\.0\.0\.[4-7]$'); # on XBL?
 $p->name('sh-rbl-xbl');
 lives_ok { $result = $p->run($r); } 'execute request';
 isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
-like( $result->action, qr/reject delivery from 201.216.207.129 rejected \("http:\/\/www.spamhaus.org\/query\/bl\?ip=201.216.207.129"\)/, 'should return a reject action' );
+like( $result->action, qr/reject delivery from 127.0.0.4 rejected \("http:\/\/www.spamhaus.org\/query\/bl\?ip=127.0.0.4"\)/, 'should return a reject action' );
 is($session->{'score'}, 20, 'score should be 20');
 
