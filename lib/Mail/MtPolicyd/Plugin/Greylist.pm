@@ -14,7 +14,7 @@ with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 use Mail::MtPolicyd::Plugin::Result;
-use Time::Piece::MySQL;
+use Time::Piece;
 use Time::Seconds;
 
 =head1 DESCRIPTION
@@ -246,9 +246,10 @@ sub is_autowl {
 		return(0);
 	}
 
-	my $last_seen = Time::Piece->from_mysql_datetime($row->{'last_seen'});
-	my $expires = Time::Piece->new + ( ONE_DAY * $self->autowl_expire_days );
-	if( $last_seen > $expires ) {
+	my $last_seen = $row->{'last_seen'};
+	my $expires = $last_seen + ( ONE_DAY * $self->autowl_expire_days );
+    my $now = Time::Piece->new->epoch;
+	if( $now > $expires ) {
 		$self->log($r, 'removing expired autowl row');
 		$self->remove_autowl_row( $sender_domain, $client_ip );
 		return(0);
@@ -283,24 +284,6 @@ sub add_autowl {
 	return;
 }
 
-=head1 AUTOWL TABLE CREATE SQL SCRIPT
-
-The following statement could be used to create the autowl table within a Maria/MySQL database:
-
-  CREATE TABLE `autowl` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `sender_domain` VARCHAR(255) NOT NULL,
-    `client_ip` VARCHAR(39) NOT NULL,
-    `count` INT UNSIGNED NOT NULL,
-    `last_seen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `domain_ip` (`client_ip`, `sender_domain`),
-    KEY(`client_ip`),
-    KEY(`sender_domain`)
-  ) ENGINE=MyISAM  DEFAULT CHARSET=latin1
-
-=cut
-
 sub get_autowl_row {
 	my ( $self, $sender_domain, $client_ip ) = @_;
 	my $sql = sprintf("SELECT * FROM %s WHERE sender_domain=? AND client_ip=?",
@@ -310,16 +293,19 @@ sub get_autowl_row {
 
 sub create_autowl_row {
 	my ( $self, $sender_domain, $client_ip ) = @_;
-	my $sql = sprintf("INSERT INTO %s VALUES(NULL, ?, ?, 1, NULL)",
-       		$self->autowl_table );
+    my $timestamp = 
+	my $sql = sprintf("INSERT INTO %s VALUES(NULL, ?, ?, 1, %d)",
+       		$self->autowl_table, Time::Piece->new->epoch );
 	$self->execute_sql($sql, $sender_domain, $client_ip);
 	return;
 }
 
 sub incr_autowl_row {
 	my ( $self, $sender_domain, $client_ip ) = @_;
-	my $sql = sprintf("UPDATE %s SET count=count+1 WHERE sender_domain=? AND client_ip=?",
-       		$self->autowl_table );
+	my $sql = sprintf(
+        "UPDATE %s SET count=count+1, last_seen=%d WHERE sender_domain=? AND client_ip=?",
+        $self->autowl_table,
+        Time::Piece->new->epoch );
 	$self->execute_sql($sql, $sender_domain, $client_ip);
 	return;
 }
@@ -362,6 +348,38 @@ sub do_create_ticket {
 	$r->server->memcached->set( $key, $ticket, $self->max_retry_wait );
 	return;
 }
+
+sub init {
+    my $self = shift;
+    if( $self->use_autowl ) {
+        $self->check_sql_tables( %{$self->_table_definitions} );
+    }
+}
+
+has '_table_definitions' => ( is => 'ro', isa => 'HashRef', lazy => 1,
+    default => sub { {
+        'autowl' => {
+            'mysql' => 'CREATE TABLE %TABLE_NAME% (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `sender_domain` VARCHAR(255) NOT NULL,
+    `client_ip` VARCHAR(39) NOT NULL,
+    `count` INT UNSIGNED NOT NULL,
+    `last_seen` INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `domain_ip` (`client_ip`, `sender_domain`),
+    KEY(`client_ip`),
+    KEY(`sender_domain`)
+  ) ENGINE=MyISAM  DEFAULT CHARSET=latin1',
+            'SQLite' => 'CREATE TABLE %TABLE_NAME% (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `sender_domain` VARCHAR(255) NOT NULL,
+    `client_ip` VARCHAR(39) NOT NULL,
+    `count` INT UNSIGNED NOT NULL,
+    `last_seen` INTEGER NOT NULL
+)',
+        },
+    } },
+);
 
 __PACKAGE__->meta->make_immutable;
 
