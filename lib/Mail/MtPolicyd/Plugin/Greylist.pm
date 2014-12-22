@@ -11,6 +11,7 @@ with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 	'uc_attributes' => [ 'enabled' ],
 };
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 use Mail::MtPolicyd::Plugin::Result;
 use Time::Piece::MySQL;
@@ -237,7 +238,7 @@ sub is_autowl {
 	my $sender_domain = $self->_extract_sender_domain( $sender );
 
 	my ( $row ) = $r->do_cached('greylist-autowl-row', sub {
-		$self->get_autowl_row( $r, $sender_domain, $client_ip );
+		$self->get_autowl_row( $sender_domain, $client_ip );
 	} );
 
 	if( ! defined $row ) {
@@ -249,7 +250,7 @@ sub is_autowl {
 	my $expires = Time::Piece->new + ( ONE_DAY * $self->autowl_expire_days );
 	if( $last_seen > $expires ) {
 		$self->log($r, 'removing expired autowl row');
-		$self->remove_autowl_row( $r, $sender_domain, $client_ip );
+		$self->remove_autowl_row( $sender_domain, $client_ip );
 		return(0);
 	}
 
@@ -259,7 +260,7 @@ sub is_autowl {
 	}
 
 	$self->log($r, 'client has valid autowl row. updating row');
-	$self->incr_autowl_row( $r, $sender_domain, $client_ip );
+	$self->incr_autowl_row( $sender_domain, $client_ip );
 	return(1);
 }
 
@@ -268,26 +269,18 @@ sub add_autowl {
 	my $sender_domain = $self->_extract_sender_domain( $sender );
 
 	my ( $row ) = $r->do_cached('greylist-autowl-row', sub {
-		$self->get_autowl_row( $r, $sender_domain, $client_ip );
+		$self->get_autowl_row( $sender_domain, $client_ip );
 	} );
 
 	if( defined $row ) {
 		$self->log($r, 'client already on autowl, just incrementing count');
-		$self->incr_autowl_row( $r, $sender_domain, $client_ip );
+		$self->incr_autowl_row( $sender_domain, $client_ip );
 		return;
 	}
 
 	$self->log($r, 'creating initial autowl entry');
-	$self->create_autowl_row( $r, $sender_domain, $client_ip );
+	$self->create_autowl_row( $sender_domain, $client_ip );
 	return;
-}
-
-sub execute_sql {
-	my ( $self, $r, $sql, @params ) = @_;
-	my $dbh = $r->server->get_dbh;
-	my $sth = $dbh->prepare( $sql );
-	$sth->execute( @params );
-	return $sth;
 }
 
 =head1 AUTOWL TABLE CREATE SQL SCRIPT
@@ -309,32 +302,32 @@ The following statement could be used to create the autowl table within a Maria/
 =cut
 
 sub get_autowl_row {
-	my ( $self, $r, $sender_domain, $client_ip ) = @_;
+	my ( $self, $sender_domain, $client_ip ) = @_;
 	my $sql = sprintf("SELECT * FROM %s WHERE sender_domain=? AND client_ip=?",
        		$self->autowl_table );
-	return $self->execute_sql($r, $sql, $sender_domain, $client_ip)->fetchrow_hashref;
+	return $self->execute_sql($sql, $sender_domain, $client_ip)->fetchrow_hashref;
 }
 
 sub create_autowl_row {
-	my ( $self, $r, $sender_domain, $client_ip ) = @_;
+	my ( $self, $sender_domain, $client_ip ) = @_;
 	my $sql = sprintf("INSERT INTO %s VALUES(NULL, ?, ?, 1, NULL)",
        		$self->autowl_table );
-	$self->execute_sql($r, $sql, $sender_domain, $client_ip);
+	$self->execute_sql($sql, $sender_domain, $client_ip);
 	return;
 }
 
 sub incr_autowl_row {
-	my ( $self, $r, $sender_domain, $client_ip ) = @_;
+	my ( $self, $sender_domain, $client_ip ) = @_;
 	my $sql = sprintf("UPDATE %s SET count=count+1 WHERE sender_domain=? AND client_ip=?",
        		$self->autowl_table );
-	$self->execute_sql($r, $sql, $sender_domain, $client_ip);
+	$self->execute_sql($sql, $sender_domain, $client_ip);
 	return;
 }
 sub remove_autowl_row {
-	my ( $self, $r, $sender_domain, $client_ip ) = @_;
+	my ( $self, $sender_domain, $client_ip ) = @_;
 	my $sql = sprintf("DELETE FROM %s WHERE sender_domain=? AND client_ip=?",
        		$self->autowl_table );
-	$self->execute_sql($r, $sql, $sender_domain, $client_ip);
+	$self->execute_sql($sql, $sender_domain, $client_ip);
 	return;
 }
 

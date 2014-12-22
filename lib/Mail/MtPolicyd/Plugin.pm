@@ -54,6 +54,10 @@ sub log {
 	return;
 }
 
+sub init {
+    return;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

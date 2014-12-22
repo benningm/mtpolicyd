@@ -11,6 +11,7 @@ with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 	'uc_attributes' => [ 'enabled' ],
 };
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 use Mail::MtPolicyd::Plugin::Result;
 
@@ -86,13 +87,8 @@ has 'match_action' => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'not_match_action' => ( is => 'rw', isa => 'Maybe[Str]' );
 
 sub _query_db {
-	my ( $self, $r, $ip ) = @_;
-
-	my $dbh = $r->server->get_dbh;
-	my $sth = $dbh->prepare( $self->sql_query );
-	$sth->execute( $ip );
-	my ( $value ) = $sth->fetchrow_array();
-	return $value;
+	my ( $self, $ip ) = @_;
+	return $self->execute_sql($self->sql_query, $ip)->fetchrow_array;
 }
 
 sub run {
@@ -111,7 +107,7 @@ sub run {
 	}
 
 	my $value = $r->do_cached( $self->name.'-result',
-		sub { $self->_query_db($r, $ip) } );
+		sub { $self->_query_db($ip) } );
 	if( $value ) {
 		$self->log($r, 'client_address '.$ip.' matched SqlList '.$self->name);
 		if( defined $self->score

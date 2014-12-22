@@ -10,6 +10,7 @@ use Data::Dumper;
 use Mail::MtPolicyd::Profiler;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::VirtualHost;
+use Mail::MtPolicyd::SqlConnection;
 use DBI;
 use Cache::Memcached;
 use Time::HiRes qw( usleep tv_interval gettimeofday );
@@ -240,13 +241,11 @@ sub child_init_hook {
 	$self->_set_process_stat('virgin child');
 
 	if( defined $self->{'db_dsn'} && $self->{'db_dsn'} !~ /^\s*$/ ) {
-		$self->{'dbh'} = DBI->connect($self->{'db_dsn'},
-			$self->{'db_user'}, $self->{'db_password'}, {
-				RaiseError => 1,
-				AutoCommit => 1,
-				mysql_auto_reconnect => 1,
-			},
-		);
+        Mail::MtPolicyd::SqlConnection->initialize(
+            dsn => $self->{'db_dsn'},
+            user => $self->{'db_user'},
+            password => $self->{'db_password'},
+        );
 	}
 
 	$self->{'memcached'} = Cache::Memcached->new( {
@@ -262,9 +261,10 @@ sub child_finish_hook {
 	my $self = shift;
 	$self->_set_process_stat('finish');
 
-	if( defined $self->{'dbh'} ) {
-		$self->{'dbh'}->disconnect;
+	if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
+		eval { Mail::MtPolicyd::SqlConnection->instance->disconnect };
 	}
+
 	return;
 }
 
@@ -358,10 +358,10 @@ sub get_virtual_host {
 
 sub get_dbh {
 	my $self = shift;
-	if( ! defined $self->{'dbh'} ) {
+	if( ! Mail::MtPolicyd::SqlConnection->is_initialized ) {
 		die('no database connection available (no configured?)');
 	}
-	return( $self->{'dbh'} );
+	return( Mail::MtPolicyd::SqlConnection->instance->dbh );
 }
 
 sub _is_loglevel {

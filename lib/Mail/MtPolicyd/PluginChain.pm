@@ -67,19 +67,20 @@ sub load_plugin {
 	my $code = "require ".$plugin_class.";";
 	eval $code; ## no critic (ProhibitStringyEval)
 	if($@) {
-		die('could not load module '.$module.' for plugin '.$plugin_name.': '.$@);
-        }
+        die('could not load module '.$module.' for plugin '.$plugin_name.': '.$@);
+    }
 
 	eval {
-                $plugin = $plugin_class->new(
-			name => $plugin_name,
-			vhost_name => $self->vhost_name,
-			%$params,
-		);
-        };
-        if($@) {
-		die('could not initialize plugin '.$plugin_name.': '.$@);
-        }
+        $plugin = $plugin_class->new(
+            name => $plugin_name,
+            vhost_name => $self->vhost_name,
+            %$params,
+        );
+        $plugin->init();
+    };
+    if($@) {
+        die('could not initialize plugin '.$plugin_name.': '.$@);
+    }
 	$self->add_plugin($plugin);
 	return;
 }
