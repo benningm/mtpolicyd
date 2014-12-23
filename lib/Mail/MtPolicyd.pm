@@ -192,6 +192,15 @@ sub configure {
 	);
 	$self->_apply_array_from_config($self, $config, 'memcached_servers');
 
+    # Initialize DB connection before load vhosts
+	if( defined $self->{'db_dsn'} && $self->{'db_dsn'} !~ /^\s*$/ ) {
+        Mail::MtPolicyd::SqlConnection->initialize(
+            dsn => $self->{'db_dsn'},
+            user => $self->{'db_user'},
+            password => $self->{'db_password'},
+        );
+	}
+
 	# LOAD VirtualHosts
 	if( ! defined $config->{'VirtualHost'} ) {
 		print(STDERR 'no virtual hosts configured!\n');
@@ -205,11 +214,11 @@ sub configure {
 		$self->{'virtual_hosts'}->{$vhost_port} = 
 			Mail::MtPolicyd::VirtualHost->new_from_config($vhost_port, $vhost)
 	}
-        if ($cmdline->{'dump_config'}) {
-		print "----- Virtual Hosts -----\n";
-		print Dumper( $self->{'virtual_hosts'} );
-                exit 0;
-        }
+    if ($cmdline->{'dump_config'}) {
+        print "----- Virtual Hosts -----\n";
+        print Dumper( $self->{'virtual_hosts'} );
+        exit 0;
+    }
 
 	# foreground mode (cmdline)
         if ($cmdline->{'foreground'}) {
@@ -240,13 +249,10 @@ sub child_init_hook {
 
 	$self->_set_process_stat('virgin child');
 
-	if( defined $self->{'db_dsn'} && $self->{'db_dsn'} !~ /^\s*$/ ) {
-        Mail::MtPolicyd::SqlConnection->initialize(
-            dsn => $self->{'db_dsn'},
-            user => $self->{'db_user'},
-            password => $self->{'db_password'},
-        );
-	}
+    # close parent database connection
+    if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
+        Mail::MtPolicyd::SqlConnection->disconnect;
+    }
 
 	$self->{'memcached'} = Cache::Memcached->new( {
 		'servers' => $self->{'memcached_servers'},

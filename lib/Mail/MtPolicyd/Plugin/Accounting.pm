@@ -134,7 +134,7 @@ sub run {
 
     foreach my $field ( @{$self->_fields} ) {
         my $key = $r->attr($field);
-        if( ! defined $key ) {
+        if( ! defined $key || $key =~ /^\s*$/ ) {
             $self->log( $r, $field.' not defined in request, skipping...');
             next;
         }
