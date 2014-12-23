@@ -17,7 +17,7 @@ use DBI;
 my $memcached = Cache::Memcached->new(
     servers => [ '127.0.0.1:11211' ],
     namespace => 'mt-test-',
-    debug => 1,
+    debug => 0,
 );
 
 if( ! $memcached->set('test-memcached', 'test', 1) ) {
@@ -106,17 +106,14 @@ my $r = Mail::MtPolicyd::Request->new(
 isa_ok( $r, 'Mail::MtPolicyd::Request');
 
 foreach my $count (1..5) {
-    diag('######## greylisting '.$count.' ##########');
     test_one_greylisting_circle( $sender, $client_address, $recipient, $r, $count );
 }
 
-diag('######## now client is on autowl ##########');
 # now autowl_threshold must be reached
 my $result;
 lives_ok { $result = $p->run($r); } 'execute request';
 ok( ! defined $result, 'greylisting no longer active' );
 
-diag('######## now client autowl entry expired ##########');
 # now manipulate autowl to expire all records
 lives_ok {
     Mail::MtPolicyd::SqlConnection->dbh->do(

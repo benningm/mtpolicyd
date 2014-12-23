@@ -21,6 +21,7 @@ has 'dbh' => ( is => 'ro', isa => 'DBI::db', lazy => 1,
             $self->password,
             {
 				RaiseError => 1,
+                PrintError => 0,
 				AutoCommit => 1,
 				mysql_auto_reconnect => 1,
 			},
