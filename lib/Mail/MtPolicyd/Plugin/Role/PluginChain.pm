@@ -22,7 +22,16 @@ has 'chain' => (
 		return;
 	},
 );
+
 has 'Plugin' => ( is => 'rw', isa => 'Maybe[HashRef]' );
+
+after 'cron' => sub {
+    my $self = shift;
+    if( defined $self->chain ) {
+        return $self->chain->cron(@_);
+    }
+    return;
+};
 
 1;
 

@@ -309,11 +309,22 @@ sub incr_autowl_row {
 	$self->execute_sql($sql, $sender_domain, $client_ip);
 	return;
 }
+
 sub remove_autowl_row {
 	my ( $self, $sender_domain, $client_ip ) = @_;
 	my $sql = sprintf("DELETE FROM %s WHERE sender_domain=? AND client_ip=?",
        		$self->autowl_table );
 	$self->execute_sql($sql, $sender_domain, $client_ip);
+	return;
+}
+
+sub expire_autowl_rows {
+	my ( $self ) = @_;
+	my $timeout = ONE_DAY * $self->autowl_expire_days;
+    my $now = Time::Piece->new->epoch;
+	my $sql = sprintf("DELETE FROM %s WHERE ? > last_seen + ?",
+       		$self->autowl_table );
+	$self->execute_sql($sql, $now, $timeout);
 	return;
 }
 
@@ -380,6 +391,18 @@ has '_table_definitions' => ( is => 'ro', isa => 'HashRef', lazy => 1,
         },
     } },
 );
+
+sub cron {
+    my $self = shift;
+    my $server = shift;
+
+    if( grep { $_ eq 'hourly' } @_ ) {
+        $server->log(3, 'expiring greylist autowl...');
+        $self->expire_autowl_rows;
+    }
+
+    return;
+}
 
 __PACKAGE__->meta->make_immutable;
 

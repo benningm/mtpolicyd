@@ -55,6 +55,21 @@ sub run {
 	return $result;
 }
 
+sub cron {
+    my $self = shift;
+    my $server = shift;
+
+    foreach my $plugin ( @{$self->plugins} ) {
+        $server->log(3, 'running cron for plugin '.$plugin->name);
+        eval { $plugin->cron( $server, @_ ); };
+        my $e = $@;
+        if( $e ) {
+            $server->log(0, 'plugin '.$plugin->name.' failed in cron: '.$e );
+        }
+    }
+	return;
+}
+
 sub load_plugin {
 	my ( $self, $plugin_name, $params ) = @_;
 	if( ! defined $params->{'module'} ) {

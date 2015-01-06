@@ -82,7 +82,7 @@ sub _apply_array_from_config {
 }
 
 sub print_usage {
-	print "mtpolicyd [-h|--help] [-c|--config=<file>] [-f|--foreground] [-l|--loglevel=<level>] [-d|--dump_vhosts]\n";
+	print "mtpolicyd [-h|--help] [-c|--config=<file>] [-f|--foreground] [-l|--loglevel=<level>] [-d|--dump_vhosts] [-t|--cron=<task1,hourly,daily,...>]\n";
 	return;
 }
 
@@ -103,12 +103,13 @@ sub configure {
         # Parse command line params
         %{$cmdline} = ();
         GetOptions(
-                        \%{$cmdline},
-                        "help|h",
-                        "dump_config|d",
-                        "config|c:s",
-                        "foreground|f",
-                        "loglevel|l:i",
+            \%{$cmdline},
+            "help|h",
+            "dump_config|d",
+            "config|c:s",
+            "foreground|f",
+            "loglevel|l:i",
+            "cron|t:s",
         );
         if ($cmdline->{'help'}) {
                 $self->print_usage;
@@ -221,19 +222,33 @@ sub configure {
     }
 
 	# foreground mode (cmdline)
-        if ($cmdline->{'foreground'}) {
-		$server->{'background'} = undef;
-		$server->{'setsid'} = undef;
-        }
+    if ($cmdline->{'foreground'}) {
+        $server->{'background'} = undef;
+        $server->{'setsid'} = undef;
+    }
 	if( $cmdline->{'loglevel'} ) {
 		$server->{'log_level'} = $cmdline->{'loglevel'};
 	} 
 
+    # if running in cron mode execute cronjobs and exit
+    if( $cmdline->{'cron'} && $cmdline->{'cron'} !~ /^\s*$/ ) {
+        my @tasks = split(/\s*,\s*/, $cmdline->{'cron'});
+        $self->cron( @tasks );
+        exit 0;
+    }
 
 	# change processname in top/ps
 	$self->_set_process_stat('master');
 
 	return;
+}
+
+sub cron {
+    my $self = shift;
+    foreach my $vhost ( keys %{$self->{'virtual_hosts'}} ) {
+        $self->{'virtual_hosts'}->{$vhost}->cron( $self, @_ );
+    }
+    return;
 }
 
 sub pre_loop_hook {

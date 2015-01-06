@@ -58,6 +58,10 @@ sub init {
     return;
 }
 
+sub cron {
+    return;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

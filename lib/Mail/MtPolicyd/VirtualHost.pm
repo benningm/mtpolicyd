@@ -36,6 +36,11 @@ sub new_from_config {
 	return $vhost;
 }
 
+sub cron {
+    my $self = shift;
+    return $self->chain->cron(@_);
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
