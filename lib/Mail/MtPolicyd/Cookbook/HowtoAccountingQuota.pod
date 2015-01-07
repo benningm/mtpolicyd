@@ -1,0 +1,137 @@
+# PODNAME: Mail::MtPolicyd::Cookbook::HowtoAccountingQuota
+# ABSTRACT: How to setup smtp level accounting and quotas
+
+=head1 SMTP level accounting and quotas with mtpolicyd
+
+The mtpolicyd could be used to implement a smtp level accounting and quota system.
+
+This guide explains how to setup accounting and quotas based on the sender ip on a monthly base and configurable quota limits.
+
+The how to expects that mtpolicyd is already installed, working and assumes a MySQL database is used to hold accounting data and quota configuration.
+
+=head2 Set up Accounting
+
+The accounting and quota checks should be implemented in postfix smtpd_end_of_data_restrictions. If you're already using mtpolicyd for other check it may be necessary to setup a second virtual host for the accounting/quota configuration. Otherwise you can use the default port 12345 virual host.
+
+=head3 Setup a second virtual host
+
+First tell mtpolicyd to also listen on an addition port. In the global configuration add the new port to the port option:
+
+  port="127.0.0.1:12345,127.0.0.1:12346"
+
+Then add a new virtual host at the end of the configuration file:
+
+  <VirtualHost 12346>
+    name="accounting"
+    # TODO: add plugins...
+  </VirtualHost>
+
+=head3 Configure the Accounting plugin
+
+Now add the Accounting plugin to your virtual host:
+
+  <Plugin AcctIP>
+    module = "Accounting"
+    fields = "client_address"
+    # time_pattern = "%Y-%m"
+    # table_prefix = "acct_"
+  </Plugin>
+
+And the restart mtpolicyd to reload the configuration.
+
+The plugin will create a table for every field listed in "fields". By default the table prefix is acct_ so the table name will be acct_client_address in our example. The plugin will create a row within this table for every client_address and expanded time_pattern:
+
+  mysql> select * from acct_client_address;
+  +----+-------------------+---------+-------+------------+---------+-----------+
+  | id | key               | time    | count | count_rcpt | size    | size_rcpt |
+  +----+-------------------+---------+-------+------------+---------+-----------+
+  |  1 | 2604:8d00:0:1::3  | 2015-01 |    18 |         18 |   95559 |     95559 |
+  |  2 | 2604:8d00:0:1::4  | 2015-01 |    21 |         21 |   99818 |     99818 |
+  ...
+  +----+-------------------+---------+-------+------------+---------+-----------+
+
+=head3 Activate the check in postfix
+
+To active the check add the policyd to your smtpd_end_of_data_restrictions in main.cf:
+
+  smtpd_end_of_data_restrictions = check_policy_service inet:127.0.0.1:12346
+
+If you have multiple smtpd process configured in a smtp-filter setup make sure only one smtpd is doing accounting/quota checks. Deactivate the restrictions by adding the following option the the re-inject smtpd processes in master.cf:
+
+  -o smtpd_end_of_data_restrictions=
+
+=head2 Setup quota limits
+
+To limit the number of messages a client_address is allowed to send add the following Quota plugin to your virtual host configuration B<before> the Accounting plugin:
+
+  <Plugin QuotaIP>
+    module = "Quota"
+    field = "client_address"
+    metric = "count"
+    threshold = 1000
+    action = "defer you exceeded your monthly limit, please insert coin"
+    # time_pattern = "%Y-%m"
+    # table_prefix = "acct_"
+  </Plugin>
+
+=head2 Using per client_address quota limits
+
+Create the following table structure in your MySQL database:
+
+  CREATE TABLE `relay_policies` (
+    `id` int(11) NOT NULL auto_increment,
+    `desc` VARCHAR(64) NOT NULL,
+    `config` TEXT NOT NULL,
+    PRIMARY KEY  (`id`)
+  ) ENGINE=InnoDB;
+
+  INSERT INTO relay_policies VALUES(1, 'standard relay host', '{"quota_count":"10000"}');
+  INSERT INTO relay_policies VALUES(2, 'premium relay host', '{"quota_count":"100000"}');
+
+  CREATE TABLE `relay_hosts` (
+    `id` int(11) NOT NULL auto_increment,
+    `client_address` VARCHAR(64) NOT NULL,
+    `relay_policy` int(11) NOT NULL,
+    PRIMARY KEY  (`id`),
+    KEY `relay_policy` (`relay_policy`),
+    CONSTRAINT `relay_hosts_ibfk_1` FOREIGN KEY (`relay_policy`) REFERENCES `relay_policies` (`id`)
+  ) ENGINE=InnoDB;
+
+  INSERT INTO relay_hosts VALUES(NULL, '2604:8d00:0:1::3', 1);
+  INSERT INTO relay_hosts VALUES(NULL, '2604:8d00:0:1::4', 2);
+
+You can use the following SELECT statement to retrieve the configuration for a relay_host:
+
+  mysql> SELECT p.config FROM relay_policies p JOIN relay_hosts h ON (h.relay_policy = p.id) WHERE h.client_address = '2604:8d00:0:1::4';
+  +--------------------------+
+  | config                   |
+  +--------------------------+
+  | {"quota_count":"100000"} |
+  +--------------------------+
+  1 row in set (0.00 sec)
+
+To load the (JSON) configuration into the mtpolicyd session variables use the SqlUserConfig plugin and this SQL statement:
+
+  <Plugin QuotaPolicyConfig>
+    module = "SqlUserConfig"
+    sql_query = "SELECT p.config FROM relay_policies p JOIN relay_hosts h ON (h.relay_policy = p.id) WHERE h.client_address=?"
+    field = "client_address"
+  </Plugin>
+
+This plugin must be added B<before> your Accounting and Quota plugins.
+
+To use the quota_count value instead of the default threshold adjust your Quota plugin configuration:
+
+  <Plugin QuotaIP>
+    module = "Quota"
+    field = "client_address"
+    metric = "count"
+    threshold = 1000
+    uc_threshold = "quota_count"
+    action = "defer you exceeded your monthly limit, please insert coin"
+    # time_pattern = "%Y-%m"
+    # table_prefix = "acct_"
+  </Plugin>
+
+If the session variable quota_count is defined it will be used as threshold instead of the value configured in mtpolicyd.conf.
+

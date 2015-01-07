@@ -133,3 +133,31 @@ It could be used like this:
     $r->is_already_done( $self->name.'-tag' ),
     $header_name, $value );
 
+=head2 Adding periodically scheduled tasks
+
+When mtpolicyd is called with the option --cron <task1,task2,...> it will execute all plugins that implement a cron() function.
+
+The function is expected to take the following parameters:
+
+  $plugin->cron( $server, @tasks );
+
+By default mtpolicyd ships with a crontab that will execute the tasks hourly,daily,weekly and monthly.
+
+A plugin that implements a weekly task may look like this:
+
+  sub cron {
+    my $self = shift;
+    my $server = shift;
+    
+    if( grep { $_ eq 'weekly' } @_ ) {
+      # do some weekly tasks
+      $server->log(3, 'i am a weekly task');
+    }
+  }
+
+The $server object could be used for logging.
+
+To see the output on the commandline you may call mtpolicyd like this:
+
+  mtpolicyd -f -l 4 --cron=weekly
+
