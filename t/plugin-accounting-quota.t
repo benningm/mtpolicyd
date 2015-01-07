@@ -3,13 +3,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 59;
+use Test::More tests => 65;
 use Test::Exception;
 use Test::MockObject;
 
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::SqlConnection;
 use Mail::MtPolicyd::Plugin::Accounting;
+use Mail::MtPolicyd::Plugin::Quota;
 
 use DBI;
 
@@ -116,8 +117,8 @@ foreach my $cnt (1..10) {
     lives_ok { $result = $p->run($r); } 'execute request for sender '.$cnt;
 }
 
-cmp_table_numrows_ok('acct_client_address', '==', 12, 'table must have 1 row');
-cmp_table_numrows_ok('acct_sender', '==', 11, 'table must have 1 row');
+cmp_table_numrows_ok('acct_client_address', '==', 12, 'table must have 12 rows');
+cmp_table_numrows_ok('acct_sender', '==', 11, 'table must have 11 rows');
 cmp_table_numrows_ok('acct_recipient', '==', 1, 'table must have 1 row');
 
 # now check some counters
@@ -136,4 +137,24 @@ cmp_table_value_ok('acct_client_address', '192.168.2.1', 'count', '==', '10');
 cmp_table_value_ok('acct_client_address', '192.168.2.1', 'count_rcpt', '==', '100');
 cmp_table_value_ok('acct_client_address', '192.168.2.1', 'size', '==', '133710');
 cmp_table_value_ok('acct_client_address', '192.168.2.1', 'size_rcpt', '==', '1337100');
+
+# Plugin::Quota checks
+
+$p = Mail::MtPolicyd::Plugin::Quota->new(
+	name => 'quota_test',
+    field => 'client_address',
+    metric => 'count',
+    threshold => 1000,
+);
+isa_ok($p, 'Mail::MtPolicyd::Plugin::Quota');
+
+$r->attributes->{'client_address'} = '192.168.0.1';
+
+lives_ok { $result = $p->run($r); } 'execute request';
+is( $result, undef, 'should not match' );
+
+$p->threshold(11);
+lives_ok { $result = $p->run($r); } 'execute request';
+isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
+cmp_ok( $result->action, 'eq', 'defer smtp traffic quota has been exceeded', 'check action');
 

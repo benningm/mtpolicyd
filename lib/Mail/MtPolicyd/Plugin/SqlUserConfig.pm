@@ -26,6 +26,10 @@ The SQL query to retrieve the JSON configuration string.
 
 The content of the first row/column is used.
 
+=item field (default: recipient)
+
+The request field used in the sql query to retrieve the user configuration.
+
 =back
 
 =cut
@@ -45,14 +49,19 @@ has '_json' => (
 	}
 );
 
+has 'field' => ( is => 'rw', isa => 'Str', default => 'recipient' );
+
 sub _get_config {
 	my ( $self, $r ) = @_;
-	my $rcpt = $r->attr('recipient');
+	my $key = $r->attr( $self->field );
+    if( ! defined $key || $key =~ /^\s*$/ ) {
+        die('key field '.$self->field.' not defined or empty in request');
+    }
 
-	my $sth = $self->execute_sql( $self->sql_query, $rcpt );
+	my $sth = $self->execute_sql( $self->sql_query, $key );
 	my ( $json ) = $sth->fetchrow_array;
 	if( ! defined $json ) {
-		die( 'no user-config found for '.$rcpt );
+		die( 'no user-config found for '.$key );
 	}
 	return $self->_json->decode( $json );
 }
@@ -60,11 +69,6 @@ sub _get_config {
 sub run {
 	my ( $self, $r ) = @_;
 	my $config;
-
-	if( ! defined $r->attr('recipient') ) {
-		$self->log($r, 'no attribute \'recipient\' in request');
-		return;
-	}
 
 	eval { $config = $self->_get_config($r) };
 	if( $@ ) {
