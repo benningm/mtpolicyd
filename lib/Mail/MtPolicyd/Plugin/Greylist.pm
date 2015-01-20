@@ -4,7 +4,7 @@ use Moose;
 use namespace::autoclean;
 
 # VERSION
-# ABSTRACT: mtpolicyd plugin for checking the client-address against an RBL
+# ABSTRACT: This plugin implements a greylisting mechanism with an auto whitelist.
 
 extends 'Mail::MtPolicyd::Plugin';
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
