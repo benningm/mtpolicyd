@@ -10,7 +10,7 @@ use Test::MockObject;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::Plugin::DBL;
 
-my $blocked = 'abizo.ru';
+my $blocked = 'dbltest.com';
 
 my $p = Mail::MtPolicyd::Plugin::DBL->new(
 	name => 'sh-dbl',
