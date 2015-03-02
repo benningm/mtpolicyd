@@ -88,6 +88,10 @@ See Mail::SPF::Server for details.
 
 An hostname to show in the default_authority_explanation as generating server.
 
+=item whitelist (default: '')
+
+A comma separated list of IP addresses to skip.
+
 =back
 
 =head1 EXAMPLE
@@ -110,7 +114,7 @@ with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 };
 
 use Mail::MtPolicyd::Plugin::Result;
-
+use Mail::MtPolicyd::AddressList;
 use Mail::SPF;
 
 has 'enabled' => ( is => 'rw', isa => 'Str', default => 'on' );
@@ -127,6 +131,19 @@ has 'reject_message' => ( is => 'rw', isa => 'Str',
 has 'default_authority_explanation' => ( is => 'ro', isa => 'Str',
 	default => 'See http://www.%{d}/why/id=%{S};ip=%{I};r=%{R}' );
 has 'hostname' => ( is => 'ro', isa => 'Str', default => '' );
+
+has 'whitelist' => ( is => 'rw', isa => 'Str',
+    default => '');
+
+has '_whitelist' => ( is => 'ro', isa => 'Mail::MtPolicyd::AddressList',
+    lazy => 1, default => sub {
+        my $self = shift;
+        my $list = Mail::MtPolicyd::AddressList->new;
+        $list->add_localhost;
+        $list->add_string( $self->whitelist );
+        return $list;
+    },
+);
 
 has '_spf' => ( is => 'ro', isa => 'Mail::SPF::Server', lazy => 1,
 	default => sub {
@@ -152,6 +169,12 @@ sub run {
 	my $ip = $r->attr('client_address');
 	my $sender = $r->attr('sender');
 	my $helo = $r->attr('helo_name');
+
+    if( defined $ip && $ip ne ''
+            && $self->_whitelist->match_string( $ip ) ) {
+		$self->log( $r, 'skipping SPF checks for local or whiteliste ip');
+        return;
+    }
 
 	if( ! defined $ip || ! defined $sender || ! length($sender) ) {
 		$self->log( $r, 'cant check SPF without client_address and sender');
