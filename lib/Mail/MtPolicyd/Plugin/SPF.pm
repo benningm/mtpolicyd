@@ -92,6 +92,10 @@ An hostname to show in the default_authority_explanation as generating server.
 
 A comma separated list of IP addresses to skip.
 
+=item check_helo (default: "on")
+
+Set to 'off' to disable SPF check on helo.
+
 =back
 
 =head1 EXAMPLE
@@ -116,6 +120,8 @@ with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 use Mail::MtPolicyd::Plugin::Result;
 use Mail::MtPolicyd::AddressList;
 use Mail::SPF;
+
+use Net::DNS::Resolver;
 
 has 'enabled' => ( is => 'rw', isa => 'Str', default => 'on' );
 
@@ -145,41 +151,83 @@ has '_whitelist' => ( is => 'ro', isa => 'Mail::MtPolicyd::AddressList',
     },
 );
 
+# use a custom resolver to be able to provide a mock in unit tests
+has '_dns_resolver' => (
+    is => 'ro', isa => 'Net::DNS::Resolver', lazy => 1,
+    default => sub { Net::DNS::Resolver->new; },
+);
+
 has '_spf' => ( is => 'ro', isa => 'Mail::SPF::Server', lazy => 1,
 	default => sub {
 		my $self = shift;
 		return Mail::SPF::Server->new(
 			default_authority_explanation => $self->default_authority_explanation,
 			hostname => $self->hostname,
+            dns_resolver => $self->_dns_resolver,
 		);
 	},
 );
 
+has 'check_helo' => ( is => 'rw', isa => 'Str', default => 'on');
+
 sub run {
 	my ( $self, $r ) = @_;
-	my $session = $r->session;
-	my $fail_mode = $self->get_uc($session, 'fail_mode');
-	my $pass_mode = $self->get_uc($session, 'pass_mode');
-	my $enabled = $self->get_uc($session, 'enabled');
 
-	if( $enabled eq 'off' ) {
+	if( $self->get_uc($r->session, 'enabled') eq 'off' ) {
 		return;
 	}
 
-	my $ip = $r->attr('client_address');
-	my $sender = $r->attr('sender');
-	my $helo = $r->attr('helo_name');
+	if( ! $r->is_attr_defined('client_address') ) {
+		$self->log( $r, 'cant check SPF without client_address');
+		return;
+	}
 
-    if( defined $ip && $ip ne ''
-            && $self->_whitelist->match_string( $ip ) ) {
-		$self->log( $r, 'skipping SPF checks for local or whiteliste ip');
+    if( $self->_whitelist->match_string( $r->attr('client_address') ) ) {
+		$self->log( $r, 'skipping SPF checks for local or whitelisted ip');
         return;
     }
 
-	if( ! defined $ip || ! defined $sender || ! length($sender) ) {
-		$self->log( $r, 'cant check SPF without client_address and sender');
-		return;
-	}
+	my $sender = $r->attr('sender');
+
+    if( $r->is_attr_defined('helo_name') && $self->check_helo ne 'off' ) {
+        my $helo_result = $self->_check_helo( $r );
+        if( defined $helo_result ) {
+            return( $helo_result ); # return action if present
+        }
+        if( ! $r->is_attr_defined('sender') ) {
+            $sender = 'postmaster@'.$r->attr('helo_name');
+		    $self->log( $r, 'null sender, building sender from HELO: '.$sender );
+        }
+    }
+
+    if( ! defined $sender ) {
+	    $self->log( $r, 'skipping SPF check because of null sender, consider setting check_helo=on');
+        return;
+    }
+
+    return $self->_check_mfrom( $r, $sender );
+}
+
+sub _check_helo {
+    my ( $self, $r ) = @_;
+	my $ip = $r->attr('client_address');
+	my $helo = $r->attr('helo_name');
+	my $session = $r->session;
+
+	my $request = Mail::SPF::Request->new(
+		scope => 'helo',
+		identity => $helo,
+		ip_address  => $ip,
+	);
+	my $result = $self->_spf->process($request);
+
+    return $self->_check_spf_result( $r, $result, 1 );
+}
+
+sub _check_mfrom {
+    my ( $self, $r, $sender ) = @_;
+	my $ip = $r->attr('client_address');
+	my $helo = $r->attr('helo_name');
 
 	my $request = Mail::SPF::Request->new(
 		scope => 'mfrom',
@@ -189,11 +237,21 @@ sub run {
 	);
 	my $result = $self->_spf->process($request);
 
+    return $self->_check_spf_result( $r, $result, 0 );
+}
+
+sub _check_spf_result {
+    my ( $self, $r, $result, $no_pass_action ) = @_;
+    my $scope = $result->request->scope;
+	my $session = $r->session;
+	my $fail_mode = $self->get_uc($session, 'fail_mode');
+	my $pass_mode = $self->get_uc($session, 'pass_mode');
+
 	if( $result->code eq 'neutral') {
-		$self->log( $r, 'SPF status neutral. (no SPF records)');
+		$self->log( $r, 'SPF '.$scope.' status neutral. (no SPF records)');
 		return;
 	} elsif( $result->code eq 'fail') {
-		$self->log( $r, 'SPF check failed: '.$result->local_explanation);
+		$self->log( $r, 'SPF '.$scope.' check failed: '.$result->local_explanation);
 		if( defined $self->fail_score && ! $r->is_already_done($self->name.'-score') ) {
 			$self->add_score( $r, $self->name => $self->fail_score );
 		}
@@ -205,7 +263,8 @@ sub run {
 		}
 		return;
 	} elsif( $result->code eq 'pass' ) {
-		$self->log( $r, 'SPF check passed');
+		$self->log( $r, 'SPF '.$scope.' check passed');
+        if( $no_pass_action ) { return; }
 		if( defined $self->pass_score && ! $r->is_already_done($self->name.'-score') ) {
 			$self->add_score( $r, $self->name => $self->pass_score );
 		}
@@ -215,7 +274,7 @@ sub run {
 		return;
 	}
 
-	$self->log( $r, 'spf check failed: '.$result->local_explanation );
+	$self->log( $r, 'spf '.$scope.' check failed: '.$result->local_explanation );
 	return;
 }
 

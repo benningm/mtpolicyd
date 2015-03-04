@@ -207,6 +207,27 @@ sub is_already_done {
 	return 0;
 }
 
+=head2 is_attr_defined
+
+Returns true if all given attribute names are defined and non-empty.
+
+=cut
+
+sub is_attr_defined {
+    my ( $self, @fields ) = @_;
+    my $a = $self->attributes;
+
+    foreach my $field ( @fields ) {
+        if( ! defined $a->{$field}
+                || $a->{$field} eq ''
+                || $a->{$field} =~ /^\s+$/ ) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
