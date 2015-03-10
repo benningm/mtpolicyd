@@ -14,7 +14,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 . /lib/lsb/init-functions
 
 DAEMON=/usr/bin/mtpolicyd
-PIDFILE=/var/run/mtpolicyd/mtpolicyd.pid
+PIDDIR=/var/run/mtpolicyd
+PIDFILE=$PIDDIR/mtpolicyd.pid
 RUNASUSER=mtpolicyd
 
 test -x $DAEMON || exit 5
@@ -25,6 +26,8 @@ fi
 
 case $1 in
 	start)
+		test -e "$PIDDIR" || mkdir "$PIDDIR"
+		chown "$RUNASUSER" "$PIDDIR"
 		log_daemon_msg "Starting postfix policy server" "mtpolicyd"
   		start-stop-daemon \
 			--start --quiet \

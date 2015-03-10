@@ -43,6 +43,14 @@ A factor to apply the SA score to the message.
 
 Do not configure a score if you want to use the factor.
 
+=item min_count (default: 10)
+
+The minimum count of mails/scores spamassassin must have
+done on this sender/ip before the AWL entry is used.
+
+If the count in AWLs auto-whitelist table is below this
+count the test will be skipped.
+
 =item threshold (default: 5)
 
 At this threshold the action or score will be applied.
@@ -137,6 +145,28 @@ Or just reject all mail with a bad reputation:
     reject_message = "bye bye..."
   </Plugin>
 
+=head1 Troubleshooting
+
+=head2 Check content of spamassassin AWL auto-whitelist
+
+To check the content of the auto-whitelist database use the sa-awl command:
+
+  $ sa-awl /var/lib/amavis/.spamassassin/auto-whitelist | grep <user>
+
+=head1 SEE ALSO
+
+=over
+
+=item Spamassassin AutoWhitelist manual
+
+L<http://wiki.apache.org/spamassassin/AutoWhitelist>
+
+=item Spamassassin AWL plugin reference
+
+L<http://spamassassin.apache.org/full/3.1.x/doc/Mail_SpamAssassin_Plugin_AWL.html>
+
+=back
+
 =cut
 
 extends 'Mail::MtPolicyd::Plugin';
@@ -198,6 +228,7 @@ sub run {
     
     if( $count < $self->min_count ) {
 	    $self->log( $r, 'sender awl reputation below min_count' );
+        return;
     }
 
     if( ! $self->matches( $score ) ) {
