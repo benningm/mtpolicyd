@@ -6,12 +6,12 @@ Release: %(date +%Y%m%d)%{dist}
 Summary: [% dzil.abstract %]
 
 Group: Applications/CPAN
-License: restricted
+License: GPLv2
 Vendor: [% dzil.license.holder %]
 Packager: [% dzil.license.holder %]
 
 BuildArch: noarch
-BuildRoot: /var/tmp/buildroot-%{name}-%{version}
+BuildRoot: %{_tmppath}/%{name}-%{version}-build
 
 Source0: %{module_name}-%{version}.tar.gz
 
@@ -19,13 +19,13 @@ Source0: %{module_name}-%{version}.tar.gz
 
 # only require core dependencies
 AutoReq: 0
-Requires: perl(Cache::Memcached), perl(Config::General), perl(Moose), perl(Tie::IxHash), perl(Time::HiRes), perl(DBI), perl(Mail::RBL), perl(JSON), perl(MooseX::Singleton)
+Requires: perl(Cache::Memcached), perl(Config::General), perl(Moose), perl(Tie::IxHash), perl(Time::HiRes), perl(DBI), perl(Mail::RBL), perl(JSON), perl(MooseX::Singleton), cron
 BuildRequires: perl, perl(ExtUtils::MakeMaker)
 
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 
 %description
-[% dzil.abstract %]
+A modular policy daemon for postfix written in perl.
 
 %prep
 rm -rf $RPM_BUILD_ROOT
@@ -89,10 +89,15 @@ fi
 %attr(755,root,root) %{_bindir}/mtpolicyd
 %attr(755,root,root) %{_bindir}/policyd-client
 %attr(755,root,root) %{_sysconfdir}/init.d/mtpolicyd
+%dir %ghost %{_sysconfdir}/mtpolicyd
 %attr(640,root,mtpolicyd) %config(noreplace) %{_sysconfdir}/mtpolicyd/mtpolicyd.conf
-%attr(640,root,root) %{_sysconfdir}/cron.d/mtpolicyd
+%attr(640,root,root) %config %{_sysconfdir}/cron.d/mtpolicyd
 %attr(750,mtpolicyd,mtpolicyd) %dir /var/run/mtpolicyd
 %{perl_vendorlib}
 %{_mandir}/man1/*
 %{_mandir}/man3/*
+
+%changelog
+* Fri Mar 20 2015 [% dzil.license.holder %] [% dzil.version %]
+- generate spec file from upstream release
 

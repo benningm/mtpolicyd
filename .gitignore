@@ -5,4 +5,5 @@ mtpolicyd_*.dsc
 mtpolicyd_*.tar.gz
 mtpolicyd_*.deb
 mtpolicyd_*.changes
+mtpolicyd_*.build
 

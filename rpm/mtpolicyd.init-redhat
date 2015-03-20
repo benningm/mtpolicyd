@@ -6,8 +6,6 @@
 # description: a postfix policy daemon used by the mailteam
 ### BEGIN INIT INFO
 # Provides: $mtpolicyd
-# Required-Start: $memcached
-# Required-Stop: $memcached
 # Default-Start:  2 3 4 5
 # Default-Stop: 0 1 6
 # Short-Description: a postfix policy daemon used by the mailteam
