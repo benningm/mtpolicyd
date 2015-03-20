@@ -4,10 +4,15 @@ use strict;
 use warnings;
 
 use Test::More;
- 
-use Test::BDD::Cucumber::Loader;
-use Test::BDD::Cucumber::Harness::TestBuilder;
- 
+
+eval {
+    require Test::BDD::Cucumber::Loader;
+    require Test::BDD::Cucumber::Harness::TestBuilder;
+};
+if( $@ ) {
+        plan skip_all => 'module Test::BDD::Cucumber not installed';
+}
+
 my ( $executor, @features ) = Test::BDD::Cucumber::Loader->load(
        't/' );
  

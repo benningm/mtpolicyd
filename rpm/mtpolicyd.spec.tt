@@ -20,7 +20,7 @@ Source0: %{module_name}-%{version}.tar.gz
 # only require core dependencies
 AutoReq: 0
 Requires: perl(Cache::Memcached), perl(Config::General), perl(Moose), perl(Tie::IxHash), perl(Time::HiRes), perl(DBI), perl(Mail::RBL), perl(JSON), perl(MooseX::Singleton)
-BuildRequires: perl, perl(ExtUtils::MakeMaker), perl(Test::BDD::Cucumber), perl(File::ReadBackwards)
+BuildRequires: perl, perl(ExtUtils::MakeMaker)
 
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 
