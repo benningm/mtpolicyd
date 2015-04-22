@@ -22,7 +22,7 @@ Start the memcached service
 
 =head3 FROM PACKAGE (RECOMMENDED)
 
-There are prebuild packages of mtpolicyd available for serveral linux distributions. The easiest way is to install mtpolicyd by installing the package build for your distribution.
+There are prebuild packages of mtpolicyd available for several linux distributions. The easiest way is to install mtpolicyd by installing the package build for your distribution.
 
 You can download the packages at: http://www.mtpolicyd.org/download.html
 

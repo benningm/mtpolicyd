@@ -31,7 +31,7 @@ In postfix main.cf:
 
 In mtpolicyd.conf:
 
-  # listen on port 12345 (multiple ports can be seperated by ',')
+  # listen on port 12345 (multiple ports can be separated by ',')
   port="127.0.0.1:12345"
 
   # defined host for this port
@@ -160,7 +160,7 @@ to shutdown child processes.
 
 =item max_servers (default: 25)
 
-The absolut maximum number of child processes to start.
+The absolute maximum number of child processes to start.
 
 =item max_requests (default: 1000)
 
@@ -192,7 +192,7 @@ Password of database user.
 
 =item memcached_servers
 
-A comma seperated list of memcached servers used for session tracking.
+A comma separated list of memcached servers used for session tracking.
 
   memcached_servers="127.0.0.1:11211"
 

@@ -4,12 +4,12 @@ Priority: optional
 Maintainer: Markus Benning <ich@markusbenning.de>
 Build-Depends: debhelper (>= 8)
 Build-Depends-Indep: perl, libtest-mockobject-perl, libdbd-sqlite3-perl, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libwww-perl, libconfig-general-perl, libtest-exception-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl, libmoosex-singleton-perl, libgeo-ip-perl, libtie-ixhash-perl, libtime-piece-mysql-perl
-Standards-Version: 3.9.2
+Standards-Version: 3.9.6
 Homepage: http://search.cpan.org/dist/Mail-MtPolicyd/
 
 Package: mtpolicyd
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl, libmoosex-singleton-perl, libtie-ixhash-perl, libtime-piece-mysql-perl, libgeo-ip-perl
-Description: the Mailteam policy daemon for postfix
+Depends: ${misc:Depends}, ${perl:Depends}, adduser, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl, libmoosex-singleton-perl, libtie-ixhash-perl, libtime-piece-mysql-perl, libgeo-ip-perl
+Description: a modular policy daemon for postfix
  mtpolicyd is a modular, configurable policy daemon for postfix with a plugin architecture.
  
