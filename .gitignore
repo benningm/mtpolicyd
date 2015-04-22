@@ -6,4 +6,5 @@ mtpolicyd_*.tar.gz
 mtpolicyd_*.deb
 mtpolicyd_*.changes
 mtpolicyd_*.build
+mtpolicyd_*.upload
 
