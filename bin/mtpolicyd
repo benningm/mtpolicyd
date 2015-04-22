@@ -20,7 +20,7 @@ mtpolicyd - a modular policy daemon for postfix
 mtpolicyd is a policy daemon for postfix access delegation.
 
 It can be configured to accept connections on several ports from a postfix mta.
-For each port a VirtualHost can be configured and for each VirtualHost serveral
+For each port a VirtualHost can be configured and for each VirtualHost several
 Plugins can be configured.
 
 =head1 EXAMPLE
