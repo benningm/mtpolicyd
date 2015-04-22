@@ -11,7 +11,7 @@ if [ "$1" = configure ]; then
 	getent passwd mtpolicyd >/dev/null 2>&1 ||
 	adduser --system --home /var/run/mtpolicyd --no-create-home \
                 --disabled-password --ingroup mtpolicyd mtpolicyd
-
-	chown mtpolicyd:mtpolicyd /var/run/mtpolicyd
 fi
+
+update-rc.d mtpolicyd defaults
 
