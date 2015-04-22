@@ -10,6 +10,22 @@ Homepage: http://search.cpan.org/dist/Mail-MtPolicyd/
 Package: mtpolicyd
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, adduser, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl, libmoosex-singleton-perl, libtie-ixhash-perl, libtime-piece-mysql-perl, libgeo-ip-perl
-Description: a modular policy daemon for postfix
- mtpolicyd is a modular, configurable policy daemon for postfix with a plugin architecture.
- 
+Description: modular policy daemon for postfix
+ mtpolicyd is a modular policy daemon for postfix written in perl.
+ It has support for virtual hosts, session caching, per-user
+ configuration and is easily extensible thru plugins.
+
+ It already ships with a lot of plugins:
+
+    RBL - query DNS IP black/whitelists
+    DBL - query DNS domain black/whitelists
+    SqlList - use SQL query as black/whitelist
+    CtIpRep - use Commtouch IP reputation
+    GeoIP - use location of sending IP
+    Fail2ban - block spammers with fail2ban/iptables
+    Greylist - greylisting
+    SPF - Sender Policy Framework
+    Accounting - collect SMTP-level accounting informations
+    Quota - apply quota limits based on Accounting data
+    and more... (see Documentation)
+
