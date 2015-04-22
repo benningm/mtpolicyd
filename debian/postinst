@@ -13,5 +13,8 @@ if [ "$1" = configure ]; then
                 --disabled-password --ingroup mtpolicyd mtpolicyd
 fi
 
-update-rc.d mtpolicyd defaults
+update-rc.d mtpolicyd defaults >/dev/null
 
+#DEBHELPER#
+
+exit 0

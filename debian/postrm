@@ -3,6 +3,9 @@
 set -e
 
 if [ "$1" = purge ]; then
-  update-rc.d mtpolicyd remove
+  update-rc.d mtpolicyd remove >/dev/null
 fi
 
+#DEBHELPER#
+
+exit 0
