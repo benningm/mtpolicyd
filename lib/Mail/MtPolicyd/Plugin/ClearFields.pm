@@ -16,11 +16,11 @@ This plugin could be used to reset some session variables.
 
 =item fields (default: empty)
 
-A comma seperated list of session variables to unset.
+A comma separated list of session variables to unset.
 
 =item fields_prefix (default: empty)
 
-A comma seperated list of prefixes.
+A comma separated list of prefixes.
 All session variables with this prefixes will be unset.
 
 =back

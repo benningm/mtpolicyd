@@ -56,11 +56,11 @@ Change to 'passive' if you just want scoring.
 
 =item recipients (default: '')
 
-A comma seperated list of recipients to use as honeypots.
+A comma separated list of recipients to use as honeypots.
 
 =item recipients_re (default: '')
 
-A comma seperated list of regular expression to match against the
+A comma separated list of regular expression to match against the
 recipient to use them as honeypots.
 
 =item reject_message (default: 'trapped by honeypod')

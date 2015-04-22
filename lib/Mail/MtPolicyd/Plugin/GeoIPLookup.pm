@@ -15,7 +15,7 @@ use Geo::IP;
 =head1 DESCRIPTION
 
 This plugin queries a GeoIP for the country code of the client_address.
-The plugin is devided in this plugin which does the Lookup and the GeoIPAction
+The plugin is divided in this plugin which does the Lookup and the GeoIPAction
 plugin which can be used to take actions based on country code.
 
 =head1 PARAMETERS

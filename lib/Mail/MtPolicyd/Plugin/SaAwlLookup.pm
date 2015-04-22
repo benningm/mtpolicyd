@@ -4,7 +4,7 @@ use Moose;
 use namespace::autoclean;
 
 # VERSION
-# ABSTRACT: mtpolicyd plugin for quering a spamassassin AWL database for reputation
+# ABSTRACT: mtpolicyd plugin for querying a spamassassin AWL database for reputation
 
 extends 'Mail::MtPolicyd::Plugin';
 

@@ -48,7 +48,7 @@ To defer clients under stress:
 
 This will return an defer action and execute no futher tests.
 
-You may want to do some whitelisting for prefered clients before this action.
+You may want to do some whitelisting for preferred clients before this action.
 
 =cut
 

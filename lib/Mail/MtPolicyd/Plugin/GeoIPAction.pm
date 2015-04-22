@@ -27,7 +27,7 @@ Enable/disable this plugin.
 
 =item country_codes (required)
 
-A comma seperated list of 2 letter country codes to match.
+A comma separated list of 2 letter country codes to match.
 
 =item (uc_)mode (default: reject)
 

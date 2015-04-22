@@ -33,7 +33,7 @@ This plugin can be used to do accounting based on request fields.
 
 This will create a table acct_client_address and a table acct_sasl_username.
 
-If a request is recieved containing the field the plugin will update the row
+If a request is received containing the field the plugin will update the row
 in the fields table. The key is the fields value(ip or username) and the time
 string build from the time_pattern.
 

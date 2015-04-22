@@ -10,7 +10,7 @@ use namespace::autoclean;
 
 This plugin can be used when a more complex evaluation of an RBL result is needed that just match/not-match.
 
-With this plugin you can take the same actions as with the RBL plugin, but it can match the result with a regular expression. This allows to take action based on the category in combined blacklists.
+With this plugin you can take the same actions as with the RBL plugin, but it can match the result with a regular expression. This allows one to take action based on the category in combined blacklists.
 
 =cut
 
