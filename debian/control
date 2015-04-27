@@ -14,9 +14,9 @@ Description: modular policy daemon for postfix
  mtpolicyd is a modular policy daemon for postfix written in perl.
  It has support for virtual hosts, session caching, per-user
  configuration and is easily extensible thru plugins.
- -
+ .
  It already ships with a lot of plugins:
- -
+ .
     RBL - query DNS IP black/whitelists
     DBL - query DNS domain black/whitelists
     SqlList - use SQL query as black/whitelist
