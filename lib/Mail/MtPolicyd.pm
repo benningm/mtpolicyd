@@ -394,6 +394,28 @@ sub _is_loglevel {
 	return(0);
 }
 
+our %_LOG_ESCAPE_MAP = (
+  "\0" => '\0',
+  "\r" => '\r',
+  "\n" => '\n',
+  "\\" => '\\\\',
+);
+
+our $_LOG_ESCAPE_MAP_RE = '['.join('',
+  map {
+    sprintf('\\x%02x', ord($_))
+  } keys %_LOG_ESCAPE_MAP
+).']';
+
+sub log {
+  my ( $self, $level, $msg, @params ) = @_;
+  $msg =~ s/($_LOG_ESCAPE_MAP_RE)/
+    $_LOG_ESCAPE_MAP{$1} /gse;
+  $msg =~ s/([\x01-\x08\x0b-\x0c\x0e-\x1f\x7f])/
+    sprintf('\\x%02X', ord($1)) /gse;
+  return $self->SUPER::log( $level, $msg, @params );
+}
+
 sub _process_one_request {
 	my ( $self, $conn, $vhost, $r ) = @_;
 	my $port = $vhost->port;
