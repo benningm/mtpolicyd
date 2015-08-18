@@ -266,7 +266,7 @@ sub child_init_hook {
 
     # close parent database connection
     if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
-        Mail::MtPolicyd::SqlConnection->disconnect;
+        Mail::MtPolicyd::SqlConnection->reconnect;
     }
 
 	$self->{'memcached'} = Cache::Memcached->new( {
