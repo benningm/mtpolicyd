@@ -43,6 +43,9 @@ sub run {
             $r->log(0, $msg);
         }
         Mail::MtPolicyd::Profiler->stop_current_timer;
+    if( scalar @plugin_results ) {
+      $result->last_match( $plugin->name );
+    }
 		foreach my $plugin_result ( @plugin_results ) {
 			$result->add_plugin_result($plugin_result);
 			if( $plugin_result->abort ) {

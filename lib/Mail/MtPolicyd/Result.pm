@@ -17,6 +17,8 @@ has 'plugin_results' => (
 	},
 );
 
+has 'last_match' => ( is => 'rw', isa => 'Maybe[Str]' );
+
 sub actions {
 	my $self = shift;
 	return map {

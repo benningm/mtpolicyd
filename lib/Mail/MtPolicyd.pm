@@ -445,7 +445,8 @@ sub _process_one_request {
 
 		# convert to ms and round by 0.5/int
 		my $elapsed = int(tv_interval( $start_t, [gettimeofday] ) * 100 + 0.5);
-		$self->log(1, $vhost->name.': instance='.$instance.', type='.$r->type.', t='.$elapsed.'ms, result='.$result->as_log);
+    my $matched = defined $result->last_match ? $result->last_match : '';
+		$self->log(1, $vhost->name.': instance='.$instance.', type='.$r->type.', t='.$elapsed.'ms, plugin='.$matched.', result='.$result->as_log);
 	};
 	if ( $@ ) { $error = $@; }
 
