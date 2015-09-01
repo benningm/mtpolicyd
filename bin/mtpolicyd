@@ -23,6 +23,8 @@ It can be configured to accept connections on several ports from a postfix mta.
 For each port a VirtualHost can be configured and for each VirtualHost several
 Plugins can be configured.
 
+For more info, mailing list, see: L<https://www.mtpolicyd.org>
+
 =head1 EXAMPLE
 
 In postfix main.cf:
@@ -42,9 +44,9 @@ In mtpolicyd.conf:
       domain="sbl.spamhaus.org"
       mode=reject
     </Plugin>
+  </VirtualHost>
 
 This check will execute a simple RBL lookup against dbl.spamhaus.org.
-  </VirtualHost>
 
 =head1 COMMANDLINE OPTIONS
 
