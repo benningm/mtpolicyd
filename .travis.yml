@@ -20,7 +20,7 @@ before_install:
    - sudo apt-get update
    - sudo apt-get -y install build-essential libdb-dev
 install:
-   - export PERL_CPANM_OPT="--notest"
+   - export PERL_CPANM_OPT="--notest --sudo"
    - cpanm --quiet --notest --skip-satisfied Dist::Zilla
    - "dzil authordeps          --missing | grep -vP '[^\\w:]' | xargs -n 5 -P 10 cpanm --quiet --notest"
    - "dzil listdeps   --author --missing | grep -vP '[^\\w:]' | cpanm --verbose"
