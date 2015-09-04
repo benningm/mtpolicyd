@@ -33,14 +33,7 @@ Mail::MtPolicyd is the Net::Server class of the mtpolicyd daemon.
 sub _preload_modules {
 	# PRELOAD some modules
 	my @modules = (
-		'BerkeleyDB',
-		'BerkeleyDB::Hash',
 		'DBI',
-		'DBD::mysql',
-		'HTTP::Request::Common',
-		'JSON',
-		'LWP::UserAgent',
-		'Mail::RBL',
 		'Moose',
 		'Moose::Role',
 		'MooseX::Getopt',
@@ -140,15 +133,17 @@ sub configure {
     }
 
 	$server->{'min_servers'} = 4;
-        $server->{'min_spare_servers'} = 4;
-        $server->{'max_spare_servers'} = 12;
-        $server->{'max_servers'} = 25;
+  $server->{'min_spare_servers'} = 4;
+  $server->{'max_spare_servers'} = 12;
+  $server->{'max_servers'} = 25;
 	$server->{'max_requests'} = 1000;
 
 	$self->{'request_timeout'} = 20;
 
 	$self->{'keepalive_timeout'} = 60;
 	$self->{'max_keepalive'} = 0;
+
+	$self->{'vhost_by_policy_context'} = 0;
 
 	$self->{'db_dsn'} = undef;
 	$self->{'db_user'} = '';
@@ -186,7 +181,7 @@ sub configure {
 
 	$self->_apply_values_from_config($self, $config, 
 		'request_timeout', 'keepalive_timeout', 'max_keepalive',
-		'db_dsn', 'db_user', 'db_password',
+    'vhost_by_policy_context', 'db_dsn', 'db_user', 'db_password',
 		'memcached_namespace', 'memcached_expire',
 		'session_lock_wait', 'session_lock_max_retry', 'session_lock_timeout',
 		'program_name',
@@ -356,23 +351,42 @@ sub store_session {
 	return;
 }
 
-sub get_virtual_host {
+sub get_conn_port {
 	my $self = shift;
 	my $server = $self->{server};
 	my $client = $server->{client};
-	my $vhost_port;
+	my $port;
 	my $is_socket = $client && $client->UNIVERSAL::can('NS_proto') &&
            $client->NS_proto eq 'UNIX';
 
 	if( $is_socket ) {
-		$vhost_port = Net::Server->VERSION >= 2 ? $client->NS_port
+		$port = Net::Server->VERSION >= 2 ? $client->NS_port
 			: $client->NS_unix_path;
 	} else {
-		$vhost_port = $self->{'server'}->{'sockport'};
+		$port = $self->{'server'}->{'sockport'};
 	}
-	my $vhost = $self->{'virtual_hosts'}->{$vhost_port};
+	return($port);
+}
+
+sub get_virtual_host {
+	my ( $self, $conn_port, $r ) = @_;
+  my $vhost;
+  my $policy_context = $r->attr('policy_context');
+
+  if( $self->{'vhost_by_policy_context'}
+      && defined $policy_context
+      && $policy_context ne '' ) {
+    foreach my $vhost_port ( keys %{$self->{'virtual_hosts'}} ) {
+      $vhost = $self->{'virtual_hosts'}->{$vhost_port};
+      if( $policy_context eq $vhost->name ) {
+        return( $vhost );
+      }
+    }
+  }
+
+	$vhost = $self->{'virtual_hosts'}->{$conn_port};
 	if( ! defined $vhost ) {
-		die('no virtual host defined for port '.$vhost_port);
+		die('no virtual host defined for port '.$conn_port);
 	}
 	return($vhost);
 }
@@ -431,12 +445,12 @@ sub _process_one_request {
 		if( $self->_is_loglevel(4) ) { $self->log(4, 'request: '.$r->dump_attr); }
 		my $instance = $r->attr('instance');
 
-        Mail::MtPolicyd::Profiler->tick('retrieve session');
+    Mail::MtPolicyd::Profiler->tick('retrieve session');
 		$s = $self->retrieve_session($instance);
 		if( $self->_is_loglevel(4) ) { $self->log(4, 'session: '.Dumper($s)); }
 		$r->session($s);
 
-        Mail::MtPolicyd::Profiler->tick('run vhost');
+    Mail::MtPolicyd::Profiler->tick('run vhost');
 		my $result = $vhost->run($r);
 
 		my $response = $result->as_policyd_response;
@@ -463,21 +477,20 @@ sub process_request {
 	my ( $self, $conn ) = @_;
 	my $max_keepalive = $self->{'max_keepalive'};
 
-	my $vhost = $self->get_virtual_host;
-	my $port = $vhost->port;
+	my $port = $self->get_conn_port;
 	$self->log(4, 'accepted connection on port '.$port );
 
 	for( my $alive_count = 0
 			; $max_keepalive == 0 || $alive_count < $max_keepalive 
 			; $alive_count++ ) {
 		my $r;
-		$self->_set_process_stat($vhost->name.', waiting request');
-        Mail::MtPolicyd::Profiler->reset;
+		$self->_set_process_stat('waiting request');
+    Mail::MtPolicyd::Profiler->reset;
 		eval {
 			local $SIG{'ALRM'} = sub { die "Keepalive connection timeout" };
 			my $timeout = $self->{'keepalive_timeout'};
 			alarm($timeout);
-            Mail::MtPolicyd::Profiler->tick('parsing request');
+      Mail::MtPolicyd::Profiler->tick('parsing request');
 			$r = Mail::MtPolicyd::Request->new_from_fh( $conn, 'server' => $self );
 		};
 		if ( $@ =~ /Keepalive connection timeout/ ) {
@@ -491,7 +504,8 @@ sub process_request {
 			last;
 		
 		}
-        Mail::MtPolicyd::Profiler->tick('processing request');
+    Mail::MtPolicyd::Profiler->tick('processing request');
+	  my $vhost = $self->get_virtual_host($port, $r);
 		$self->_set_process_stat($vhost->name.', processing request');
 		eval { 
 			$self->_process_one_request( $conn, $vhost, $r );
@@ -503,10 +517,10 @@ sub process_request {
 			$self->log(0, 'error while processing request: '.$@);
 			last;
 		}
-        Mail::MtPolicyd::Profiler->stop_current_timer;
-	    if( $self->_is_loglevel(4) ) {
-            $self->log(4, Mail::MtPolicyd::Profiler->to_string);
-        }
+    Mail::MtPolicyd::Profiler->stop_current_timer;
+    if( $self->_is_loglevel(4) ) {
+      $self->log(4, Mail::MtPolicyd::Profiler->to_string);
+    }
 	}
 
 	$self->log(3, '['.$port.']: closing connection');

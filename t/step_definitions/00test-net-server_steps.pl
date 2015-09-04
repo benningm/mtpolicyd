@@ -50,6 +50,8 @@ has 'port' => ( is => 'ro', isa => 'Int', lazy => 1,
     },
 );
 
+has 'memcached_port' => ( is => 'ro', isa => 'Maybe[Int]' );
+
 sub pid {
     my $self = shift;
 
@@ -140,6 +142,7 @@ sub generate_config {
 
     $template->process( $self->config_file, {
             port => $self->port,
+            memcached_port => $self->memcached_port,
         }, $self->tmp_config_file )
         || die "error processing config: ".$template->error(), "\n";
 
@@ -164,7 +167,11 @@ sub run {
         log_level => $self->log_level,
     );
     if( fork == 0 ) {
-        $server->run;
+      open my $log_fh, '>>', $self->log_file
+        or die('could no open log_file: '.$@);
+      *STDOUT = $log_fh;
+      *STDERR = $log_fh;
+      $server->run;
     }
     pass('started server '.$self->class.' on port '.$self->port);
 

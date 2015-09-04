@@ -74,6 +74,38 @@ Execute this plugins when the condition matched.
 
 =back
 
+=head1 EXAMPLE: use of postfix policy_context
+
+The policy_context of postfix could be used to trigger checks
+in mtpolicyd.
+
+To activate additional checks in mtpolicyd from within postfix use may
+use a configuration in postfix main.cf like:
+
+  # check, no additional checks
+  check_policy_service inet:localhost:12345
+  ...
+  # check with additional checks!
+  check_policy_service { inet:localhost:12345, policy_context=strict_checks }
+
+In mtpolicyd.conf:
+
+  <Plugin if-strict-checks>
+    module = "Condition"
+    key = "policy_context"
+    match = "strict_checks"
+
+    <Plugin strict-check>
+      # ...
+    </Plugin>
+    # more checks ...
+  </Plugin>
+
+The policy_context feature will be available in postfix 3.1 and later.
+
+If you need completely different checks consider using the vhost_by_policy_context
+(L<mtpolicyd>) option with different virtual hosts. 
+
 =head1 EXAMPLE: execute postgrey action in postfix
 
 If the session variable "greylisting" is "on" return the postfix action "postgrey":

@@ -174,6 +174,37 @@ or no limit if set to zero.
 Should be the same value as smtpd_policy_service_reuse_count_limit (postfix >2.12)
 in postfix/smtpd configuration.
 
+=item vhost_by_policy_context (default: 0)
+
+Select VirtualHost by 'policy_context' request field.
+
+The policy_context will be matched against the 'name' field of the VirtualHost.
+
+For example in postfix main.cf use advanced syntax:
+
+  check_policy_service { inet:localhost:12345, policy_context=reputation }
+  ...
+  check_policy_service { inet:localhost:12345, policy_context=accounting }
+
+In mtpolicyd.conf:
+
+  port="127.0.0.1:12345" # only 1 port
+  vhost_by_policy_context=1
+  <VirtualHost 12345>
+    name=reputation
+    ... plugins ...
+  </VirtualHost>
+
+  <VirtualHost 12345>
+    name=accounting
+    ... plugins ...
+  </VirtualHost>
+
+The policy_context feature will be available in postfix 3.1 and later.
+
+If you just need small differentiations consider using the L<Mail::MtPolicyd::Plugin::Condition>
+plugin to match against plugin_context field.
+
 =item request_timeout
 
 Maximum total time for one request.
