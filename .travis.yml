@@ -20,7 +20,7 @@ before_install:
    - sudo apt-get update
    - sudo apt-get -y install build-essential libdb-dev memcached unbound
    - sudo /etc/init.d/unbound start
-   - sudo echo "nameserver 127.0.0.1" > /etc/resolv.conf
+   - sudo echo "nameserver 127.0.0.1" \> /etc/resolv.conf
 install:
    - export PERL_CPANM_OPT="--notest --sudo"
    - cpanm --quiet --notest --skip-satisfied Dist::Zilla
