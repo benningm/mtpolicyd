@@ -129,6 +129,39 @@ group id to run as
 
 location of the pid file
 
+=item ldap_host (default: empty)
+
+Hostname or address of an LDAP server if you want to use LDAP plugins.
+
+=item ldap_port (default: 389)
+
+Port or the LDAP server.
+
+=item ldap_keepalive (default: 1)
+
+Activate keepalive for the LDAP connection.
+
+Set to 0 to disable.
+
+=item ldap_timeout (default: 120)
+
+Timeout for LDAP connection.
+
+=item ldap_binddn (default: empty)
+
+The binddn user if the LDAP server requires authentication.
+
+If the binddn is empty no bind will be performed and the
+connection will be used anonymously.
+
+=item ldap_password
+
+Password of the binddn user.
+
+=item ldap_starttls (default: 1)
+
+Use of TLS encryption for LDAP.
+
 =item log_level
 
 Verbosity of logging: 0=>'err', 1=>'warning', 2=>'notice', 3=>'info', 4=>'debug'

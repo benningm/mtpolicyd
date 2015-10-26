@@ -11,6 +11,7 @@ use Mail::MtPolicyd::Profiler;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::VirtualHost;
 use Mail::MtPolicyd::SqlConnection;
+use Mail::MtPolicyd::LdapConnection;
 use DBI;
 use Cache::Memcached;
 use Time::HiRes qw( usleep tv_interval gettimeofday );
@@ -149,6 +150,14 @@ sub configure {
 	$self->{'db_user'} = '';
 	$self->{'db_password'} = '';
 
+  $self->{'ldap_host'} = undef,
+  $self->{'ldap_port'} = 389,
+  $self->{'ldap_keepalive'} = 1,
+  $self->{'ldap_timeout'} = 120,
+  $self->{'ldap_binddn'} = undef,
+  $self->{'ldap_password'} = undef,
+  $self->{'ldap_starttls'} = 1,
+
 	$self->{'memcached_servers'} = [ '127.0.0.1:11211' ];
 	$self->{'memcached_namespace'} = 'mt-';
 	$self->{'memcached_expire'} = 5 * 60;
@@ -185,6 +194,8 @@ sub configure {
 		'memcached_namespace', 'memcached_expire',
 		'session_lock_wait', 'session_lock_max_retry', 'session_lock_timeout',
 		'program_name',
+    'ldap_host', 'ldap_port', 'ldap_keepalive', 'ldap_timeout', 'ldap_binddn',
+    'ldap_password', 'ldap_starttls',
 	);
 	$self->_apply_array_from_config($self, $config, 'memcached_servers');
 
@@ -196,6 +207,18 @@ sub configure {
             password => $self->{'db_password'},
         );
 	}
+
+  if( defined $self->{'ldap_host'} && $self->{'ldap_host'} !~ /^\s*$/ ) {
+        Mail::MtPolicyd::LdapConnection->initialize(
+          host => $self->{'ldap_host'},
+          port => $self->{'ldap_port'},
+          keepalive => $self->{'ldap_keepalive'},
+          timeout => $self->{'ldap_timeout'},
+          binddn => $self->{'ldap_binddn'},
+          password => $self->{'ldap_password'},
+          starttls => $self->{'ldap_starttls'},
+        );
+  }
 
 	# LOAD VirtualHosts
 	if( ! defined $config->{'VirtualHost'} ) {
@@ -259,10 +282,13 @@ sub child_init_hook {
 
 	$self->_set_process_stat('virgin child');
 
-    # close parent database connection
-    if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
-        Mail::MtPolicyd::SqlConnection->reconnect;
-    }
+  # close parent database connection
+  if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
+    Mail::MtPolicyd::SqlConnection->reconnect;
+  }
+  if( Mail::MtPolicyd::LdapConnection->is_initialized ) {
+    Mail::MtPolicyd::LdapConnection->reconnect;
+  }
 
 	$self->{'memcached'} = Cache::Memcached->new( {
 		'servers' => $self->{'memcached_servers'},
@@ -279,6 +305,9 @@ sub child_finish_hook {
 
 	if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
 		eval { Mail::MtPolicyd::SqlConnection->instance->disconnect };
+	}
+	if( Mail::MtPolicyd::LdapConnection->is_initialized ) {
+		eval { Mail::MtPolicyd::LdapConnection->instance->disconnect };
 	}
 
 	return;
