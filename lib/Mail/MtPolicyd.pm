@@ -284,10 +284,16 @@ sub child_init_hook {
 
   # close parent database connection
   if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
-    Mail::MtPolicyd::SqlConnection->reconnect;
+    eval { Mail::MtPolicyd::SqlConnection->reconnect; };
+    if($@) {
+      $self->log(0, 'failed to enstablish sql connection: '.$@);
+    }
   }
   if( Mail::MtPolicyd::LdapConnection->is_initialized ) {
-    Mail::MtPolicyd::LdapConnection->reconnect;
+    eval { Mail::MtPolicyd::LdapConnection->reconnect; };
+    if($@) {
+      $self->log(0, 'failed to enstablish ldap connection: '.$@);
+    }
   }
 
 	$self->{'memcached'} = Cache::Memcached->new( {

@@ -3,6 +3,7 @@ _build
 Mail-MtPolicyd*
 mtpolicyd_*.dsc
 mtpolicyd_*.tar.gz
+mtpolicyd_*.tar.xz
 mtpolicyd_*.deb
 mtpolicyd_*.changes
 mtpolicyd_*.build

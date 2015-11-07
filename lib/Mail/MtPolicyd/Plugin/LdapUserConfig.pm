@@ -105,14 +105,20 @@ sub retrieve_ldap_entry {
     $self->log( $r, 'filter_field('.$self->filter_field.') is not defined in request. skipping ldap search.');
     return;
   }
-  my $filter = sprintf( $self->filter, escape_filter_value($value) );
+  my $filter = $self->filter;
+  my $filter_value = escape_filter_value($value);
+  $filter =~ s/%s/$filter_value/g;
+  $self->log( $r, 'ldap filter is: '.$filter);
 
-  my $msg = $ldap->search(
-    base => $self->basedn,
-    filter => $filter,
-  );
-  if( $msg->is_error ) {
-    $self->log( $r, 'ldap search failed: '.$msg->error_text );
+  my $msg;
+  eval {
+    $msg = $ldap->search(
+      base => $self->basedn,
+      filter => $filter,
+    );
+  };
+  if( $@ ) {
+    $self->log( $r, 'ldap search failed: '.$@ );
     return;
   }
   if( $msg->count != 1 ) {

@@ -49,7 +49,8 @@ sub _connect_ldap {
   ) or die ('cant connect ldap: '.$@);
 
   if( $self->starttls ) {
-    $ldap->start_tls( verify => 'require' );
+    eval{ $ldap->start_tls( verify => 'require' ); };
+    if( $@ ) { die('starttls on ldap connection failed: '.$@); }
   }
 
   if( defined $self->binddn ) {
