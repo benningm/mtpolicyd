@@ -13,6 +13,9 @@ if [ "$1" = configure ]; then
                 --disabled-password --ingroup mtpolicyd mtpolicyd
 fi
 
+test -d /var/lib/mtpolicyd && \
+  chown mtpolicyd:mtpolicyd /var/lib/mtpolicyd
+
 #DEBHELPER#
 
 exit 0
