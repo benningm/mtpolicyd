@@ -60,14 +60,14 @@ is( $result, undef, 'should not match' );
 $r->attributes->{'reverse_client_name'} = "23.19.76.2.$blocked";
 lives_ok { $result = $p->run($r); } 'execute request';
 isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
-like( $result->action, qr/reject reverse_client_name rejected \(23.19.76.2.$blocked, http:\/\/www.spamhaus.org\/query\/dbl\?domain=$blocked\)/, 'should return a blocked header' );
+like( $result->action, qr/reject reverse_client_name rejected \(23.19.76.2.$blocked, https:\/\/www.spamhaus.org\/query\/domain\/$blocked\)/, 'should return a blocked header' );
 
 is($session->{'score'}, 2.5, 'score should be 2.5');
 
 $r->attributes->{'sender'} = "bsnobfvqzz\@$blocked";
 lives_ok { $result = $p->run($r); } 'execute request';
 isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
-like( $result->action, qr/reject sender rejected \($blocked, http:\/\/www.spamhaus.org\/query\/dbl\?domain=$blocked\)/, 'should return a reject' );
+like( $result->action, qr/reject sender rejected \($blocked, https:\/\/www.spamhaus.org\/query\/domain\/$blocked\)/, 'should return a reject' );
 
 is($session->{'score'}, 7.5, 'score should be 7.5');
 
