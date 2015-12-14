@@ -9,7 +9,7 @@ Homepage: http://search.cpan.org/dist/Mail-MtPolicyd/
 
 Package: mtpolicyd
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, adduser, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl, libmoosex-singleton-perl, libtie-ixhash-perl, libtime-piece-mysql-perl, libgeo-ip-perl
+Depends: ${misc:Depends}, ${perl:Depends}, adduser, libcache-memcached-perl, libdbi-perl, libmoose-perl, libmail-rbl-perl, libconfig-general-perl, libnamespace-autoclean-perl, libmoosex-getopt-perl, libmoosex-role-parameterized-perl, libmoosex-singleton-perl, libtie-ixhash-perl, libtime-piece-mysql-perl, libgeo-ip-perl, libnet-server-perl, libjson-perl, libnet-ldap-perl, libdbd-sqlite3-perl, libmail-spf-perl
 Description: modular policy daemon for postfix
  mtpolicyd is a modular policy daemon for postfix written in perl.
  It has support for virtual hosts, session caching, per-user
