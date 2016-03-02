@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 19;
 use Test::Exception;
 use Test::MockObject;
 
@@ -12,7 +12,7 @@ use Mail::MtPolicyd::Plugin::Condition;
 
 my $c = Mail::MtPolicyd::Plugin::Condition->new(
 	name => 'greylist',
-	key => 'greylisting',
+	key => 's:greylisting',
 	match => 'on',
 	action => 'postgrey_users',
 );
@@ -32,6 +32,7 @@ $server->mock( 'log',
 my $r = Mail::MtPolicyd::Request->new(
 	attributes => {
 		'instance' => 'abcd1234',
+    'queue_id' => '4561B3D95D8B',
 	},
 	session => $session,
 	server => $server,
@@ -62,4 +63,20 @@ lives_ok { ( $result ) = $c->run($r); } 'execute request';
 isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'should match' );
 is( $result->action, 'zumsel', 'check result' );
 is( $result->abort, 1, 'check result' );
+
+# use a request attribute
+$c = Mail::MtPolicyd::Plugin::Condition->new(
+	name => 'by_queueid',
+	key => 'r:queue_id',
+	match => '4561B3D95D8B',
+	action => 'reject',
+);
+lives_ok { ( $result ) = $c->run($r); } 'execute by_queueid request';
+isa_ok( $result, 'Mail::MtPolicyd::Plugin::Result', 'check must match' );
+is( $result->action, 'reject', 'check must return reject action' );
+
+# test invert option
+$c->invert(1);
+lives_ok { ( $result ) = $c->run($r); } 'execute by_queueid request';
+is( $result, undef, 'must not match when inverted' );
 

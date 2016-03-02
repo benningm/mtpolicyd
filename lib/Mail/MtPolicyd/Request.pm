@@ -88,6 +88,68 @@ sub dump_attr {
 	return( join(', ', map { $_.'='.$attr->{$_} } keys %$attr ) );
 }
 
+=head2 get($variable_name)
+
+Retrieve value of a session or request variable.
+
+The format for the variable name is
+
+  (<scope>:)?<variable>
+
+If no scope is given it default to the request scope.
+
+Valid scopes are:
+
+=over
+
+=item session, s
+
+Session variables.
+
+=item request, r
+
+Request attributes.
+
+=back
+
+For example:
+
+  $r->get('request:sender'); # retrieve sender from request
+  $r->get('r:sender');       # short format
+  $r->get('sender');         # scope defaults to request
+
+  $r->get('session:user_policy'); # retrieve session variable user_policy
+  $r->get('s:user_policy');       # the same
+
+=cut
+
+sub get {
+  my ( $self, $value ) = @_;
+  my ($scope, $name);
+
+  if( ! defined $value || $value eq '' ) { return; }
+
+  my @params = split(':', $value, 2);
+  if( scalar(@params) == 2 ) {
+    ( $scope, $name ) = @params;
+  } elsif( scalar(@params) == 1) {
+    ( $scope, $name ) = ( 'request', @params );
+  }
+
+  if( $scope eq 'session' || $scope eq 's' ) {
+    if( ! defined $self->session ) {
+      return;
+    }
+    return $self->session->{$name};
+  } elsif( $scope eq 'request' || $scope eq 'r' ) {
+    return $self->attr( $name );
+  }
+
+  die("unknown scope $scope while retrieving variable for $value");
+
+  return;
+}
+
 =head2 new_from_fh($fh)
 
 An object constructor for creating an request object with the content read

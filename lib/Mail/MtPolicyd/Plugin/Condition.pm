@@ -26,7 +26,36 @@ Will return an action, score or execute futher plugins if the specified conditio
 
 =item key (required)
 
-The name of the variable within the session to check.
+The name of the variable to check.
+
+Syntax is
+
+  (<scope>:)?<variable-name>
+
+If no scope is give it defaults to request.
+
+Possible scopes are:
+
+=over
+
+=item session, s
+
+Session variables.
+
+=item request, r
+
+Request attribute variables.
+
+=back
+
+Examples:
+
+  session:user_policy
+  s:user_policy
+
+  request:queue_id
+  r:queue_id
+  queue_id
 
 =back
 
@@ -50,6 +79,10 @@ Match if numerical less than.
 =item gt_match (default: empty)
 
 Match if numerical greater than.
+
+=item invert (default: 0)
+
+If set to 1 the logic will be inverted.
 
 =back
 
@@ -126,16 +159,18 @@ The postgrey action in postfix may look like:
 
 =cut
 
-has 'key' => ( is => 'ro', isa => 'Str', required => 1 );
+has 'key' => ( is => 'rw', isa => 'Str', required => 1 );
 
 has 'score' => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'action' => ( is => 'rw', isa => 'Maybe[Str]' );
 
-has 'match' => ( is => 'ro', isa => 'Maybe[Str]' );
-has 're_match' => ( is => 'ro', isa => 'Maybe[Str]' );
+has 'match' => ( is => 'rw', isa => 'Maybe[Str]' );
+has 're_match' => ( is => 'rw', isa => 'Maybe[Str]' );
 
-has 'gt_match' => ( is => 'ro', isa => 'Maybe[Num]' );
-has 'lt_match' => ( is => 'ro', isa => 'Maybe[Num]' );
+has 'gt_match' => ( is => 'rw', isa => 'Maybe[Num]' );
+has 'lt_match' => ( is => 'rw', isa => 'Maybe[Num]' );
+
+has 'invert' => ( is => 'rw', isa => 'Bool', default => 0 );
 
 sub _match {
 	my ( $self, $value ) = @_;
@@ -168,12 +203,17 @@ sub run {
 	my $key = $self->key;
 	my $session = $r->session;
 	
-	my $value = $session->{$key};
+	my $value = $r->get( $key );
 	if( ! defined $value ) {
 		return;
 	}
 
-	if( $self->_match($value) ) {
+  my $matched = $self->_match($value);
+  if( $self->invert ) {
+    $matched = ! $matched;
+  }
+
+	if( $matched ) {
 		$self->log($r, $key.' matched '.$value);
 		my $score = $self->get_uc($session, 'score');
 		if( defined $score ) {
