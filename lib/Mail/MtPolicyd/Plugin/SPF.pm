@@ -12,6 +12,20 @@ This plugin applies Sender Policy Framework(SPF) checks.
 
 Checks are implemented using the Mail::SPF perl module.
 
+Actions based on the SPF result can be applied for:
+
+=over
+
+=item pass (pass_mode, default: passive)
+
+=item softfail (softfail_mode, default: passive)
+
+=item fail (fail_mode, default: reject)
+
+=back
+
+For status 'neutral' no action or score is applied.
+
 =head1 PARAMETERS
 
 =over
@@ -39,6 +53,30 @@ Will return an 'dunno' action.
 =item pass_score (default: empty)
 
 Score to apply when the sender has been successfully checked against SPF.
+
+=item (uc_)softfail_mode (default: passive)
+
+How to behave if the SPF checks returned a softfail status.
+
+=over
+
+=item passive
+
+Just apply score. Do not return an action.
+
+=item accept, dunno
+
+Will return an 'dunno' action.
+
+=item reject
+
+Return an reject action.
+
+=back
+
+=item softfail_score (default: empty)
+
+Score to apply when the SPF check returns an softfail status.
 
 =item (uc_)fail_mode (default: reject)
 
@@ -108,13 +146,17 @@ Set to 'off' to disable SPF check on helo.
     #fail_score = 10
   </Plugin>
 
+=head1 SEE ALSO
+
+L<Mail::SPF>, OpenSPF L<www.openspf.org/>, RFC 7209 L<https://tools.ietf.org/html/rfc7208>
+
 =cut
 
 extends 'Mail::MtPolicyd::Plugin';
 
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
-	'uc_attributes' => [ 'enabled', 'fail_mode', 'pass_mode' ],
+	'uc_attributes' => [ 'enabled', 'fail_mode', 'softfail_mode', 'pass_mode' ],
 };
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -127,6 +169,9 @@ has 'enabled' => ( is => 'rw', isa => 'Str', default => 'on' );
 
 has 'pass_score' => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'pass_mode' => ( is => 'rw', isa => 'Str', default => 'passive' );
+
+has 'softfail_score' => ( is => 'rw', isa => 'Maybe[Num]' );
+has 'softfail_mode' => ( is => 'rw', isa => 'Str', default => 'passive' );
 
 has 'fail_score' => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'fail_mode' => ( is => 'rw', isa => 'Str', default => 'reject' );
@@ -241,10 +286,11 @@ sub _check_mfrom {
 }
 
 sub _check_spf_result {
-    my ( $self, $r, $result, $no_pass_action ) = @_;
-    my $scope = $result->request->scope;
+  my ( $self, $r, $result, $no_pass_action ) = @_;
+  my $scope = $result->request->scope;
 	my $session = $r->session;
 	my $fail_mode = $self->get_uc($session, 'fail_mode');
+	my $softfail_mode = $self->get_uc($session, 'softfail_mode');
 	my $pass_mode = $self->get_uc($session, 'pass_mode');
 
 	if( $result->code eq 'neutral') {
@@ -260,6 +306,20 @@ sub _check_spf_result {
 				action => $self->_get_reject_action($result),
 				abort => 1,
 			);
+		}
+		return;
+	} elsif( $result->code eq 'softfail') {
+		$self->log( $r, 'SPF '.$scope.' check returned softfail '.$result->local_explanation);
+		if( defined $self->softfail_score && ! $r->is_already_done($self->name.'-score') ) {
+			$self->add_score( $r, $self->name => $self->softfail_score );
+		}
+		if( $softfail_mode eq 'reject') {
+			return Mail::MtPolicyd::Plugin::Result->new(
+				action => $self->_get_reject_action($result),
+				abort => 1,
+			);
+		} elsif( $softfail_mode eq 'accept' || $softfail_mode eq 'dunno') {
+			return Mail::MtPolicyd::Plugin::Result->new_dunno;
 		}
 		return;
 	} elsif( $result->code eq 'pass' ) {
