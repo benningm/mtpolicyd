@@ -130,7 +130,8 @@ sub run {
 			next;
 		}
 
-		$self->log($r, 'domain '.$hostname.' is on '.$self->domain.' blacklist ('.$info.')');
+    $self->log($r, 'domain '.$hostname.' is on '.$self->domain.' blacklist'.
+      ( defined $info ? " ($info)" : '' ) );
 
 		my $score_attr = $check.'_score';
 		if( defined $self->$score_attr &&

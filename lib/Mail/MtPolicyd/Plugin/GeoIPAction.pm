@@ -97,6 +97,9 @@ sub run {
 		return;
 	}
 	my ( $country_code ) = @{$session->{$result_key}};
+  if( ! defined $country_code ) {
+    return;
+  }
 
 	if( ! $self->is_in_country_codes( $country_code ) ) {
 		$self->log( $r, 'country_code '.$country_code.' of IP not in country_code list'.$self->name);
