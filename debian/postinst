@@ -15,6 +15,11 @@ fi
 
 test -d /var/lib/mtpolicyd && \
   chown mtpolicyd:mtpolicyd /var/lib/mtpolicyd
+if [ ! -e /var/lib/mtpolicyd/mtpolicyd.sqlite ] ; then
+  touch /var/lib/mtpolicyd/mtpolicyd.sqlite
+  chown mtpolicyd:mtpolicyd /var/lib/mtpolicyd/mtpolicyd.sqlite
+  chmod 640 /var/lib/mtpolicyd/mtpolicyd.sqlite
+fi
 test -d /var/run/mtpolicyd && \
   chown mtpolicyd:mtpolicyd /var/run/mtpolicyd
 
