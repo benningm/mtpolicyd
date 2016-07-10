@@ -7,7 +7,6 @@ use namespace::autoclean;
 # ABSTRACT: mtpolicyd plugin for retrieving the user config of a user
 
 extends 'Mail::MtPolicyd::Plugin';
-with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 =head1 DESCRIPTION
 
@@ -50,6 +49,12 @@ has '_json' => (
 );
 
 has 'field' => ( is => 'rw', isa => 'Str', default => 'recipient' );
+
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'db',
+  type => 'Sql',
+};
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 sub _get_config {
 	my ( $self, $r ) = @_;

@@ -10,10 +10,9 @@ use Data::Dumper;
 use Mail::MtPolicyd::Profiler;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::VirtualHost;
-use Mail::MtPolicyd::SqlConnection;
-use Mail::MtPolicyd::LdapConnection;
+use Mail::MtPolicyd::ConnectionPool;
+use Mail::MtPolicyd::SessionCache;
 use DBI;
-use Cache::Memcached;
 use Time::HiRes qw( usleep tv_interval gettimeofday );
 use Getopt::Long;
 use Tie::IxHash;
@@ -146,27 +145,6 @@ sub configure {
 
 	$self->{'vhost_by_policy_context'} = 0;
 
-	$self->{'db_dsn'} = undef;
-	$self->{'db_user'} = '';
-	$self->{'db_password'} = '';
-
-  $self->{'ldap_host'} = undef,
-  $self->{'ldap_port'} = 389,
-  $self->{'ldap_keepalive'} = 1,
-  $self->{'ldap_timeout'} = 120,
-  $self->{'ldap_binddn'} = undef,
-  $self->{'ldap_password'} = undef,
-  $self->{'ldap_starttls'} = 1,
-
-	$self->{'memcached_servers'} = [ '127.0.0.1:11211' ];
-	$self->{'memcached_namespace'} = 'mt-';
-	$self->{'memcached_expire'} = 5 * 60;
-
-	# will be incremented in linear steps 50, 100, 150...
-	$self->{'session_lock_wait'} = 50; # usec
-	$self->{'session_lock_max_retry'} = 50; # times
-	$self->{'session_lock_timeout'} = 10; # sec
-
 	$self->{'program_name'} = $0;
 
 	# APPLY values from configuration file
@@ -190,35 +168,16 @@ sub configure {
 
 	$self->_apply_values_from_config($self, $config, 
 		'request_timeout', 'keepalive_timeout', 'max_keepalive',
-    'vhost_by_policy_context', 'db_dsn', 'db_user', 'db_password',
-		'memcached_namespace', 'memcached_expire',
-		'session_lock_wait', 'session_lock_max_retry', 'session_lock_timeout',
+    'vhost_by_policy_context',
 		'program_name',
-    'ldap_host', 'ldap_port', 'ldap_keepalive', 'ldap_timeout', 'ldap_binddn',
-    'ldap_password', 'ldap_starttls',
 	);
-	$self->_apply_array_from_config($self, $config, 'memcached_servers');
 
-    # Initialize DB connection before load vhosts
-	if( defined $self->{'db_dsn'} && $self->{'db_dsn'} !~ /^\s*$/ ) {
-        Mail::MtPolicyd::SqlConnection->initialize(
-            dsn => $self->{'db_dsn'},
-            user => $self->{'db_user'},
-            password => $self->{'db_password'},
-        );
-	}
-
-  if( defined $self->{'ldap_host'} && $self->{'ldap_host'} !~ /^\s*$/ ) {
-        Mail::MtPolicyd::LdapConnection->initialize(
-          host => $self->{'ldap_host'},
-          port => $self->{'ldap_port'},
-          keepalive => $self->{'ldap_keepalive'},
-          timeout => $self->{'ldap_timeout'},
-          binddn => $self->{'ldap_binddn'},
-          password => $self->{'ldap_password'},
-          starttls => $self->{'ldap_starttls'},
-        );
+  # initialize connection pool
+  Mail::MtPolicyd::ConnectionPool->initialize;
+  if( defined $config->{'Connection'} ) {
+    Mail::MtPolicyd::ConnectionPool->load_config( $config->{'Connection'} );
   }
+  $self->{'session_cache_config'} = $config->{'SessionCache'};
 
 	# LOAD VirtualHosts
 	if( ! defined $config->{'VirtualHost'} ) {
@@ -282,25 +241,17 @@ sub child_init_hook {
 
 	$self->_set_process_stat('virgin child');
 
-  # close parent database connection
-  if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
-    eval { Mail::MtPolicyd::SqlConnection->reconnect; };
-    if($@) {
-      $self->log(0, 'failed to enstablish sql connection: '.$@);
-    }
-  }
-  if( Mail::MtPolicyd::LdapConnection->is_initialized ) {
-    eval { Mail::MtPolicyd::LdapConnection->reconnect; };
-    if($@) {
-      $self->log(0, 'failed to enstablish ldap connection: '.$@);
-    }
-  }
+  # recreate connection in child process
+  Mail::MtPolicyd::ConnectionPool->reconnect;
 
-	$self->{'memcached'} = Cache::Memcached->new( {
-		'servers' => $self->{'memcached_servers'},
-		'debug' => 0,
-		'namespace' => $self->{'memcached_namespace'},
-	} );
+  # initialize session cache
+  $self->{'session_cache'} = Mail::MtPolicyd::SessionCache->new(
+    server => $self,
+  );
+  if( defined $self->{'session_cache_config'} &&
+      ref($self->{'session_cache_config'}) eq 'HASH') {
+    $self->{'session_cache'}->load_config( $self->{'session_cache_config'} );
+  }
 
 	return;
 }
@@ -309,79 +260,8 @@ sub child_finish_hook {
 	my $self = shift;
 	$self->_set_process_stat('finish');
 
-	if( Mail::MtPolicyd::SqlConnection->is_initialized ) {
-		eval { Mail::MtPolicyd::SqlConnection->instance->disconnect };
-	}
-	if( Mail::MtPolicyd::LdapConnection->is_initialized ) {
-		eval { Mail::MtPolicyd::LdapConnection->instance->disconnect };
-	}
-
-	return;
-}
-
-sub memcached {
-	my $self = shift;
-	if( ! defined $self->{'memcached'} ) {
-		die('no memcached connection available!');
-	}
-	return( $self->{'memcached'} );
-}
-
-sub acquire_session_lock {
-	my ( $self, $instance ) = @_;
-	my $lock = 'lock_'.$instance;
-	my $wait = $self->{'session_lock_wait'};
-	my $max_retry = $self->{'session_lock_max_retry'};
-	my $lock_ttl = $self->{'session_lock_timeout'};
-
-	for( my $try = 1 ; $try < $max_retry ; $try++ ) {
-		if( $self->{'memcached'}->add($lock, 1, $lock_ttl) ) {
-			return; # lock created
-		}
-		usleep( $wait * $try );
-	}
-
-	die('could not acquire lock for session '.$instance);
-	return;
-}
-
-sub release_session_lock {
-	my ( $self, $instance ) = @_;
-	my $lock = 'lock_'.$instance;
-
-	$self->{'memcached'}->delete($lock);
-
-	return;
-}
-
-sub retrieve_session {
-	my ($self, $instance ) = @_;
-
-	if( ! defined $instance ) {
-		return;
-	}
-
-	$self->acquire_session_lock( $instance );
-
-	if( my $session = $self->{'memcached'}->get($instance) ) {
-		return($session);
-	}
-	
-	return( { '_instance' => $instance } );
-}
-
-sub store_session {
-	my ($self, $session ) = @_;
-	my $instance = $session->{'_instance'};
-	my $expire = defined $self->{'memcached_expire'} ? $self->{'memcached_expire'} : 300;
-
-	if( ! defined $session || ! defined $instance ) {
-		return;
-	}
-	
-	$self->{'memcached'}->set($instance, $session, $expire);
-
-	$self->release_session_lock($instance);
+  Mail::MtPolicyd::ConnectionPool->shutdown;
+  $self->{'session_cache'}->shutdown;
 
 	return;
 }
@@ -424,14 +304,6 @@ sub get_virtual_host {
 		die('no virtual host defined for port '.$conn_port);
 	}
 	return($vhost);
-}
-
-sub get_dbh {
-	my $self = shift;
-	if( ! Mail::MtPolicyd::SqlConnection->is_initialized ) {
-		die('no database connection available (no configured?)');
-	}
-	return( Mail::MtPolicyd::SqlConnection->instance->dbh );
 }
 
 sub _is_loglevel {
@@ -481,7 +353,7 @@ sub _process_one_request {
 		my $instance = $r->attr('instance');
 
     Mail::MtPolicyd::Profiler->tick('retrieve session');
-		$s = $self->retrieve_session($instance);
+		$s = $self->{'session_cache'}->retrieve_session($instance);
 		if( $self->_is_loglevel(4) ) { $self->log(4, 'session: '.Dumper($s)); }
 		$r->session($s);
 
@@ -500,7 +372,7 @@ sub _process_one_request {
 	if ( $@ ) { $error = $@; }
 
 	if( defined $s ) {
-		$self->store_session($s);
+		$self->{'session_cache'}->store_session($s);
 	}
 
 	if( defined $error ) { die( $error ); }
@@ -568,6 +440,14 @@ sub _set_process_stat {
 	my ( $self, $stat ) = @_;
 	$0 = $self->{'program_name'}.' ('.$stat.')'
 };
+
+sub memcached {
+  die('the global memcached connection does no longer exist in mtpolicyd >= 2.00');
+}
+
+sub get_dbh {
+  die('the global dbh handle is no longer available in mtpolicyd >= 2.00');
+}
 
 1;
 

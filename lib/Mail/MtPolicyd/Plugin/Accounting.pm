@@ -10,7 +10,6 @@ extends 'Mail::MtPolicyd::Plugin';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 	'uc_attributes' => [ 'enabled' ],
 };
-with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 use Mail::MtPolicyd::Plugin::Result;
 
@@ -109,6 +108,12 @@ has '_fields' => ( is => 'ro', isa => 'ArrayRef', lazy => 1,
 );
 
 has 'time_pattern' => ( is => 'rw', isa => 'Str', default => '%Y-%m');
+
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'db',
+  type => 'Sql',
+};
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 sub get_timekey {
     my $self = shift;
@@ -226,7 +231,7 @@ sub update_accounting {
 
 sub insert_accounting_row {
     my ( $self, $field, $key, $metrics ) = @_;
-    my $dbh = Mail::MtPolicyd::SqlConnection->instance->dbh;
+    my $dbh = $self->_db_handle;
     my $table_name = $dbh->quote_identifier( $self->get_table_name($field) );
     my $values = {
         'key' => $key,
@@ -248,7 +253,7 @@ sub insert_accounting_row {
 
 sub update_accounting_row {
     my ( $self, $field, $key, $metrics ) = @_;
-    my $dbh = Mail::MtPolicyd::SqlConnection->instance->dbh;
+    my $dbh = $self->_db_handle;
     my $table_name = $dbh->quote_identifier( $self->get_table_name($field) );
     my $where = {
         'key' => $key,

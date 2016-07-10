@@ -12,7 +12,6 @@ with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
         'enabled', 'field', 'threshold', 'action', 'metric'
     ],
 };
-with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 with 'Mail::MtPolicyd::Plugin::Role::PluginChain';
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -121,6 +120,12 @@ has 'time_pattern' => ( is => 'rw', isa => 'Str', default => '%Y-%m');
 has 'threshold' => ( is => 'rw', isa => 'Int', required => 1);
 has 'action' => ( is => 'rw', isa => 'Str', default => 'defer smtp traffic quota has been exceeded');
 
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'db',
+  type => 'Sql',
+};
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
+
 sub get_timekey {
     my $self = shift;
     return Time::Piece->new->strftime( $self->time_pattern );
@@ -173,7 +178,7 @@ sub get_table_name {
 
 sub get_accounting_count {
     my ( $self, $r, $field, $metric, $key ) = @_;
-    my $dbh = Mail::MtPolicyd::SqlConnection->instance->dbh;
+    my $dbh = $self->_db_handle;
     my $where = {
         'key' => $key,
         'time' => $self->get_timekey,

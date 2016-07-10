@@ -11,7 +11,6 @@ with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 	'uc_attributes' => [ 'enabled' ],
 };
-with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 use Mail::MtPolicyd::Plugin::Result;
 
@@ -85,6 +84,12 @@ has 'sql_query' => (
 has 'score' => ( is => 'rw', isa => 'Maybe[Num]' );
 has 'match_action' => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'not_match_action' => ( is => 'rw', isa => 'Maybe[Str]' );
+
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'db',
+  type => 'Sql',
+};
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 sub _query_db {
 	my ( $self, $ip ) = @_;

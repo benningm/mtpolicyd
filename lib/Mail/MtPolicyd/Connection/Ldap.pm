@@ -1,9 +1,10 @@
-package Mail::MtPolicyd::LdapConnection;
+package Mail::MtPolicyd::Connection::Ldap;
 
-use strict;
-use MooseX::Singleton;
+use Moose;
 
-# ABSTRACT: singleton class to hold the ldap server connection
+extends 'Mail::MtPolicyd::Connection';
+
+# ABSTRACT: connection pool object to hold a ldap connection
 # VERSION
 
 use Net::LDAP;
@@ -65,15 +66,13 @@ sub _connect_ldap {
 sub reconnect {
   my $self = shift;
   $self->handle( $self->_connect_ldap );
+  return;
 }
 
-sub is_initialized {
-    my ( $class, @args ) = @_;
-
-    if( $class->meta->existing_singleton ) {
-        return( 1 );
-    }
-    return( 0 );
+sub shutdown {
+  my $self = shift;
+  $self->handle->unbind;
+  return;
 }
 
 1;

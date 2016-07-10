@@ -58,18 +58,9 @@ copy into the current mtpolicyd session.
 
 =cut
 
-use Mail::MtPolicyd::LdapConnection;
 use Mail::MtPolicyd::Plugin::Result;
 
 use Net::LDAP::Util qw( escape_filter_value );
-
-sub init {
-  my $self = shift;
-  if( ! Mail::MtPolicyd::LdapConnection->is_initialized ) {
-    die('no ldap connection initialized, but required for plugin '.$self->name);
-  }
-  return;
-};
 
 has 'basedn' => ( is => 'rw', isa => 'Str', default => '' );
 
@@ -96,9 +87,17 @@ has '_config_fields' => (
   },
 );
 
+has 'connection' => ( is => 'ro', isa => 'Str', default => 'ldap' );
+has 'connection_type' => ( is => 'ro', isa => 'Str', default => 'Ldap' );
+
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'ldap',
+  type => 'Ldap',
+};
+
 sub retrieve_ldap_entry {
   my ( $self, $r ) = @_;
-  my $ldap = Mail::MtPolicyd::LdapConnection->handle;
+  my $ldap = $self->_ldap_handle;
 
   my $value = $self->get_filter_value( $r );
   if( ! defined $value ) {

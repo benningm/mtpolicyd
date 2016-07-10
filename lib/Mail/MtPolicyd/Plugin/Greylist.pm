@@ -11,7 +11,6 @@ with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
 	'uc_attributes' => [ 'enabled' ],
 };
-with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 use Mail::MtPolicyd::Plugin::Result;
 use Time::Piece;
@@ -148,6 +147,17 @@ has 'autowl_table' => ( is => 'rw', isa => 'Str', default => 'autowl' );
 
 has 'query_autowl' => ( is => 'rw', isa => 'Bool', default => 1 );
 has 'create_ticket' => ( is => 'rw', isa => 'Bool', default => 1 );
+
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'db',
+  type => 'Sql',
+};
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'memcached',
+  type => 'Memcached',
+};
+
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 sub run {
 	my ( $self, $r ) = @_;
@@ -331,7 +341,7 @@ sub expire_autowl_rows {
 sub get_ticket {
 	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
 	my $key = join(",", $sender, $ip, $rcpt );
-	if( my $ticket = $r->server->memcached->get( $key ) ) {
+	if( my $ticket = $r->server->_memcached_handle->get( $key ) ) {
 		return( $ticket );
 	}
 	return;
@@ -348,7 +358,7 @@ sub is_valid_ticket {
 sub remove_ticket {
 	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
 	my $key = join(",", $sender, $ip, $rcpt );
-	$r->server->memcached->delete( $key );
+	$r->server->_memcached_handle->delete( $key );
 	return;
 }
 
@@ -356,7 +366,7 @@ sub do_create_ticket {
 	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
 	my $ticket = time + $self->min_retry_wait;
 	my $key = join(",", $sender, $ip, $rcpt );
-	$r->server->memcached->set( $key, $ticket, $self->max_retry_wait );
+	$r->server->_memcached_handle->set( $key, $ticket, $self->max_retry_wait );
 	return;
 }
 

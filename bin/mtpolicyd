@@ -129,39 +129,6 @@ group id to run as
 
 location of the pid file
 
-=item ldap_host (default: empty)
-
-Hostname or address of an LDAP server if you want to use LDAP plugins.
-
-=item ldap_port (default: 389)
-
-Port or the LDAP server.
-
-=item ldap_keepalive (default: 1)
-
-Activate keepalive for the LDAP connection.
-
-Set to 0 to disable.
-
-=item ldap_timeout (default: 120)
-
-Timeout for LDAP connection.
-
-=item ldap_binddn (default: empty)
-
-The binddn user if the LDAP server requires authentication.
-
-If the binddn is empty no bind will be performed and the
-connection will be used anonymously.
-
-=item ldap_password
-
-Password of the binddn user.
-
-=item ldap_starttls (default: 1)
-
-Use of TLS encryption for LDAP.
-
 =item log_level
 
 Verbosity of logging: 0=>'err', 1=>'warning', 2=>'notice', 3=>'info', 4=>'debug'
@@ -242,61 +209,77 @@ plugin to match against plugin_context field.
 
 Maximum total time for one request.
 
-=item db_dsn
+=back
 
-Connection string for the database in perl-DBI format. See L<DBI>.
+=head1 CONFIGURE CONNECTIONS
 
-  db_dsn="dbi:mysql:mail"
+mtpolicyd has a global per process connection pool.
 
-=item db_user
+Connections could be registered within the connection pool using a <Connection>
+block within the configuration. You must at least specify the name of the connection
+and the module for the connection type.
 
-Name of database user.
+  <Connection [name of connection]>
+    module = "[connection type]"
+    # ... addditional parameters
+  </Connection>
 
-=item db_password
+Connection modules may require additional parameters.
 
-Password of database user.
+Currently supported connection modules:
 
-=item memcached_servers
+=over
 
-A comma separated list of memcached servers used for session tracking.
+=item Sql
 
-  memcached_servers="127.0.0.1:11211"
+Perl DBI based connections for SQL databases.
 
-=item memcached_namespace (default: mt-)
+L<Mail::MtPolicyd::Connection::Sql>
 
-Use a namespace for storing sessions in memcached 
+=item Memcached
 
-=item memcached_expire (default: 300 seconds)
+Connection to a memcached server/cluster.
 
-Expire time for memcached entries.
+L<Mail::MtPolicyd::Connection::Memcached>
 
-=item session_lock_wait (default: 50 usec)
+=item Ldap
 
-Time to wait before retry to acquire lock on a session object.
+Connection to an LDAP directory server.
 
-Will be increased with every try. (50,100,150,...)
-
-=item session_lock_max_retry (default: 50 times)
-
-Number of maximum retries for acquiring a session lock.
-
-=item session_lock_timeout (default: 10 seconds)
-
-After this timeout the lock will destroy itself.
+L<Mail::MtPolicyd::Connection::Ldap>
 
 =back
 
 =head1 SESSION MANAGEMENT
 
-mtpolicyd uses a session managemend based on memcached.
+mtpolicyd implements session managemend to cache data across
+different checks for requests with the same instance id.
 
-mtpolicy will generate a session for each mail passed to it and store it within memcached.
+mtpolicy is able to generate a session for each mail passed to it and store it within the
+session cache.
 The attached session information will be available to all following plugins across
 child processes, virtual hosts and ports.
 
 Plugins will use this session information to cache lookup etc. across multiple requests
 for the same mail. Postfix will send a query for each recipient and for each configured
 check_policy_service call.
+
+To enable the SessionCache specify a <SessionCache> block within your configuration:
+
+  <SessionCache>
+    module = "Memcached"
+    expire = "300"
+    lock_wait=50
+    lock_max_retry=50
+    lock_timeout=10
+  </SessionCache>
+
+The example requires that a connection of type "Memcached" and the name
+"memcached" is configured within the connection pool.
+For details read L<Mail::MtPolicyd::SessionCache::Memcached>.
+
+As of version 2.00 it is possible to implement different session caches,
+but currently theres is only a implementation for memcached.
 
 =head1 PROCESSING OF REQUEST
 
@@ -334,17 +317,6 @@ and the AddScoreHeader plugin will prepend the score as a header to the mail:
     module = "AddScoreHeader"
     spam_score=5
   </Plugin>
-
-=head1 DATABASE CONFIGURATION
-
-If you configure a database this database connection will be available to plugins.
-For example the SqlList plugin can be used to implement a black or white list based on
-an SQL query. Or the SqlUserConfig plugin could be used to query a database for additional
-configuration options.
-
-  db_dsn=DBI:mysql:mtpolicyd
-  db_user=user
-  db_password=password
 
 =cut
 
