@@ -8,4 +8,4 @@ mtpolicyd_*.deb
 mtpolicyd_*.changes
 mtpolicyd_*.build
 mtpolicyd_*.upload
-
+local
