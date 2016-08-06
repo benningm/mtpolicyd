@@ -1,11 +1,11 @@
 FROM perl:5.24.0
 MAINTAINER  Markus Benning <ich@markusbenning.de>
 
-COPY ./cpanfile* /mtpolicyd/
+COPY ./cpanfile /mtpolicyd/cpanfile
 WORKDIR /mtpolicyd
 
 RUN cpanm --notest Carton \
-  && carton install --deployment \
+  && carton install \
   && rm -rf ~/.cpanm
 
 RUN addgroup --system mtpolicyd \
