@@ -1,7 +1,7 @@
 FROM perl:5.24.0
 MAINTAINER  Markus Benning <ich@markusbenning.de>
 
-COPY ./cpanfile /mtpolicyd/cpanfile
+COPY ./cpanfile* /mtpolicyd/
 WORKDIR /mtpolicyd
 
 RUN cpanm --notest Carton \
