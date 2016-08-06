@@ -5,7 +5,7 @@ COPY ./cpanfile /mtpolicyd/cpanfile
 WORKDIR /mtpolicyd
 
 RUN cpanm --notest Carton \
-  && carton install \
+  && carton install --deployment \
   && rm -rf ~/.cpanm
 
 RUN addgroup --system mtpolicyd \
@@ -17,4 +17,4 @@ COPY ./etc/docker.conf /etc/mtpolicyd/mtpolicyd.conf
 
 EXPOSE 12345
 
-CMD [ "carton",  "exec", "bin/mtpolicyd", "-f", "-l", "2", "-c", "/etc/mtpolicyd/mtpolicyd.conf" ]
+CMD [ "carton",  "exec", "perl", "-Mlib=./lib", "bin/mtpolicyd", "-f", "-l", "2", "-c", "/etc/mtpolicyd/mtpolicyd.conf" ]

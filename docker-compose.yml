@@ -5,9 +5,9 @@ services:
     # image: benningm/mtpolicyd:latest
     ports:
      - "12345:12345"
-    volumes:
-     - .:/mtpolicyd
+    #    volumes:
+      #     - .:/mtpolicyd
     links:
      - memcached
-memcached:
-  image: memcached
+  memcached:
+    image: memcached
