@@ -5,6 +5,7 @@ requires 'perl', '5.8.5';
 requires 'BerkeleyDB';
 requires 'BerkeleyDB::Hash';
 requires 'Cache::Memcached';
+requires 'Redis';
 requires 'Config::General';
 requires 'DBI';
 requires 'Data::Dumper';

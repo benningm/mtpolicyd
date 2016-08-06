@@ -48,11 +48,11 @@ has 'db' => ( is => 'ro', isa => 'Int', default => 0 );
 
 sub _create_handle {
   my $self = shift;
-  my $redis = Redis->new( {
+  my $redis = Redis->new(
     'server' => $self->servers,
     'debug' => $self->debug,
     defined $self->password ? ( 'password' => $self->password ) : (),
-  } );
+  );
   $redis->select( $self->db );
   return $redis;
 }
@@ -61,7 +61,7 @@ has 'handle' => (
   is => 'rw', isa => 'Redis', lazy => 1,
   default => sub {
     my $self = shift;
-    $self->_create_handle
+    return $self->_create_handle;
   },
 );
 
