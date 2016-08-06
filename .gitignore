@@ -9,3 +9,4 @@ mtpolicyd_*.changes
 mtpolicyd_*.build
 mtpolicyd_*.upload
 local
+cpanfile.snapshot
