@@ -2,6 +2,9 @@ package Mail::MtPolicyd::SessionCache;
 
 use Moose;
 
+# VERSION
+# ABSTRACT: class for handling session cache
+
 use Mail::MtPolicyd::SessionCache::None;
 
 has 'server' => (

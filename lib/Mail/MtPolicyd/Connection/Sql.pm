@@ -7,6 +7,44 @@ extends 'Mail::MtPolicyd::Connection';
 # ABSTRACT: Connection pool sql connection object
 # VERSION
 
+=head1 SYNOPSIS
+
+  <Connection db>
+    module = "Sql"
+    # see perldoc DBI for syntax of dsn connection string
+    dsn = "dbi:SQLite:dbname=/var/lib/mtpolicyd/mtpolicyd.sqlite"
+    # user = "mtpolicyd"
+    # user = "secret"
+  </Connection>
+
+=head1 PARAMETERS
+
+=over
+
+=item dsn (required)
+
+A perl DBI connection string.
+
+Examples:
+
+  dbi:SQLite:dbname=/var/lib/mtpolicyd/mtpolicyd.sqlite
+  dbi:SQLite::memory:
+  DBI:mysql:database=test;host=localhost
+
+see L<DBI>
+
+=item user (default: '')
+
+A username if required for connection.
+
+=item password (default: '')
+
+A password if required for user/connection.
+
+=back
+
+=cut
+
 use DBI;
 
 has 'dsn' => ( is => 'ro', isa => 'Str', required => 1 );

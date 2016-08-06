@@ -7,7 +7,7 @@ use Test::More tests => 5;
 use Test::Exception;
 use Test::MockObject;
 
-use Mail::MtPolicyd::SqlConnection;
+use Mail::MtPolicyd::ConnectionPool;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::Plugin::SqlUserConfig;
 
@@ -25,12 +25,13 @@ my $session = {
 };
 
 # build a fake database with an in-memory SQLite DB
-Mail::MtPolicyd::SqlConnection->initialize(
-    dsn => 'dbi:SQLite::memory:',
-    user => '',
-    password => '',
-);
-my $dbh = Mail::MtPolicyd::SqlConnection->dbh;
+Mail::MtPolicyd::ConnectionPool->load_connection( 'db', {
+  module => 'Sql',
+  dsn => 'dbi:SQLite::memory:',
+  user => '',
+  password => '',
+} );
+my $dbh = Mail::MtPolicyd::ConnectionPool->get_handle('db');
 $dbh->do(
 'CREATE TABLE `user_config` (
    `id` INTEGER PRIMARY KEY AUTOINCREMENT,

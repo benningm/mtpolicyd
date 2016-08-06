@@ -9,6 +9,7 @@ Feature: vhost by policy_context
     policy_context=fred
     """
     Then mtpolicyd must respond with a action like ^reject my name is fred
+    And the mtpolicyd server must be stopped successfull
 
   Scenario: mtpolicyd must select the correct vhost (horst)
     Given that a mtpolicyd is running with configuration t-data/vhost-by-policy-context.conf
@@ -17,6 +18,7 @@ Feature: vhost by policy_context
     policy_context=horst
     """
     Then mtpolicyd must respond with a action like ^reject my name is horst
+    And the mtpolicyd server must be stopped successfull
 
   Scenario: mtpolicyd must select the correct vhost (default is fred)
     Given that a mtpolicyd is running with configuration t-data/vhost-by-policy-context.conf
@@ -25,3 +27,5 @@ Feature: vhost by policy_context
     client_address=127.0.0.1
     """
     Then mtpolicyd must respond with a action like ^reject my name is fred
+    And the mtpolicyd server must be stopped successfull
+

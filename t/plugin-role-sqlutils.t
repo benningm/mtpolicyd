@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 14;
 use Test::Exception;
 
-use Mail::MtPolicyd::SqlConnection;
+use Mail::MtPolicyd::ConnectionPool;
 
 
 package Mail::MtPolicyd::Plugin::TestSqlUtils;
@@ -14,6 +14,10 @@ package Mail::MtPolicyd::Plugin::TestSqlUtils;
 use Moose;
 
 extends 'Mail::MtPolicyd::Plugin';
+with 'Mail::MtPolicyd::Role::Connection' => {
+  name => 'db',
+  type => 'Sql',
+};
 with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 package main;
@@ -25,14 +29,15 @@ my $sql = Mail::MtPolicyd::Plugin::TestSqlUtils->new(
 );
 isa_ok($sql, 'Mail::MtPolicyd::Plugin::TestSqlUtils');
 
-throws_ok { $sql->init(); } qr/no sql database initialized, but required for plugin sqlutils-test/, 'must die in init() when db unavailable';
+throws_ok { $sql->init(); } qr/no connection db configured!/, 'must die in init() when db unavailable';
 
 # build a fake database with an in-memory SQLite DB
-Mail::MtPolicyd::SqlConnection->initialize(
-    dsn => 'dbi:SQLite::memory:',
-    user => '',
-    password => '',
-);
+Mail::MtPolicyd::ConnectionPool->load_connection( 'db', {
+  module => 'Sql',
+  dsn => 'dbi:SQLite::memory:',
+  user => '',
+  password => '',
+} );
 
 lives_ok { $sql->init(); } 'init() when db available';
 

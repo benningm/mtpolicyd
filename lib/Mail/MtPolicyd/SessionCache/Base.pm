@@ -2,6 +2,9 @@ package Mail::MtPolicyd::SessionCache::Base;
 
 use Moose;
 
+# VERSION
+# ABSTRACT: base class for session cache adapters
+
 sub retrieve_session {
 	my ($self, $instance ) = @_;
   return {};

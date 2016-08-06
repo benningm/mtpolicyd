@@ -3,6 +3,9 @@ package Mail::MtPolicyd::ConnectionPool;
 use strict;
 use MooseX::Singleton;
 
+# VERSION
+# ABSTRACT: a singleton to hold all configure connections
+
 has 'pool' => (
   is => 'ro',
   isa => 'HashRef[Mail::MtPolicyd::Connection]',

@@ -2,6 +2,9 @@ package Mail::MtPolicyd::Connection;
 
 use Moose;
 
+# VERSION
+# ABSTRACT: base class for mtpolicyd connection modules
+
 has 'name' => ( is => 'ro', isa => 'Str', required => 1 );
 
 sub init {

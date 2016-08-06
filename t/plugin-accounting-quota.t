@@ -8,7 +8,7 @@ use Test::Exception;
 use Test::MockObject;
 
 use Mail::MtPolicyd::Request;
-use Mail::MtPolicyd::SqlConnection;
+use Mail::MtPolicyd::ConnectionPool;
 use Mail::MtPolicyd::Plugin::Accounting;
 use Mail::MtPolicyd::Plugin::Quota;
 
@@ -21,11 +21,12 @@ my $p = Mail::MtPolicyd::Plugin::Accounting->new(
 isa_ok($p, 'Mail::MtPolicyd::Plugin::Accounting');
 
 # build a fake database with an in-memory SQLite DB
-Mail::MtPolicyd::SqlConnection->initialize(
-    dsn => 'dbi:SQLite::memory:',
-    user => '',
-    password => '',
-);
+Mail::MtPolicyd::ConnectionPool->load_connection( 'db', {
+  module => 'Sql',
+  dsn => 'dbi:SQLite::memory:',
+  user => '',
+  password => '',
+} );
 
 lives_ok {
     $p->init();
@@ -58,7 +59,7 @@ isa_ok( $r, 'Mail::MtPolicyd::Request');
 
 sub cmp_table_numrows_ok {
     my ( $table, $op, $rows, $desc ) = @_;
-    my $dbh = Mail::MtPolicyd::SqlConnection->instance->dbh;
+    my $dbh = Mail::MtPolicyd::ConnectionPool->get_handle('db');
     my $table_name = $dbh->quote_identifier( $table );
     my $sql = "SELECT * FROM $table_name";
     my $sth = $dbh->prepare( $sql );
@@ -69,7 +70,7 @@ sub cmp_table_numrows_ok {
 
 sub cmp_table_value_ok {
     my ( $table, $key, $field, $op, $count ) = @_;
-    my $dbh = Mail::MtPolicyd::SqlConnection->instance->dbh;
+    my $dbh = Mail::MtPolicyd::ConnectionPool->get_handle('db');
 
     my $table_name = $dbh->quote_identifier( $table );
     my $field_name = $dbh->quote_identifier( $field );

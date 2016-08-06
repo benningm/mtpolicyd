@@ -2,11 +2,42 @@ package Mail::MtPolicyd::Connection::Memcached;
 
 use Moose;
 
+# VERSION
+# ABSTRACT: a memcached connection plugin for mtpolicyd
+
 extends 'Mail::MtPolicyd::Connection';
+
+=head1 SYNOPSIS
+
+  <Connection memcached>
+    module = "Memcached"
+    servers = "127.0.0.1:11211"
+    # namespace = "mt-"
+  </Connection>
+
+=head1 PARAMETERS
+
+=over
+
+=item servers (default: 127.0.0.1:11211)
+
+Comma seperated list for memcached servers to connect.
+
+=item debug (default: 0)
+
+Enable to debug memcached connection.
+
+=item namespace (default: '')
+
+Set a prefix used for all keys of this connection.
+
+=back
+
+=cut
 
 use Cache::Memcached;
 
-has 'servers' => ( is => 'ro', isa => 'Str', required => 1 );
+has 'servers' => ( is => 'ro', isa => 'Str', default => '127.0.0.1:11211' );
 has '_servers' => (
   is => 'ro', isa => 'ArrayRef[Str]', lazy => 1,
   default => sub {

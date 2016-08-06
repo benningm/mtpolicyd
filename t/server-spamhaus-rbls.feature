@@ -51,4 +51,5 @@ Feature: mtpolicyd running with a basic spamhaus RBL config
     helo_name=mail.dbltest.com
     """
     Then mtpolicyd must respond with a action like ^reject DBL helo_name
+    And the mtpolicyd server must be stopped successfull
 

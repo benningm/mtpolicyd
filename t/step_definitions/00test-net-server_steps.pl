@@ -6,6 +6,7 @@ use warnings;
 package Test::Net::Server;
 
 use Test::More;
+use Test::Exception;
 use File::Temp;
 use IO::File;
 use POSIX;
@@ -156,22 +157,41 @@ sub run {
     $self->generate_config;
     
     eval "require $class";
+    if( $@ ) {
+      fail('could not load server class: '.$@);
+      return;
+    }
 
-    my $server = "$class"->new(
-        config_file => $self->tmp_config_file,
-        log_file => $self->log_file,
-        pid_file => $self->pid_file,
-        port => $self->port,
-        user => getuid(),
-        group => getgid(),
-        log_level => $self->log_level,
-    );
-    if( fork == 0 ) {
-      open my $log_fh, '>>', $self->log_file
-        or die('could no open log_file: '.$@);
-      *STDOUT = $log_fh;
-      *STDERR = $log_fh;
-      $server->run;
+    my $server;
+    lives_ok {
+      $server = "$class"->new(
+          config_file => $self->tmp_config_file,
+          log_file => $self->log_file,
+          pid_file => $self->pid_file,
+          port => $self->port,
+          user => getuid(),
+          group => getgid(),
+          log_level => $self->log_level,
+          background => undef,
+          setsid => undef,
+      );
+    } 'creation of server object';
+    my $pid = fork;
+    if( ! defined $pid ) {
+      fail('failed to fork');
+      return;
+    }
+    if( $pid == 0 ) {
+      diag('child process running with pid '.$$);
+      if( open my $log_fh, '>>', $self->log_file ) {
+        *STDOUT = $log_fh;
+        *STDERR = $log_fh;
+      } else {
+        fail('could no open log_file: '.$@);
+        exit 1;
+      }
+      eval { $server->run; };
+      exit 0;
     }
     pass('started server '.$self->class.' on port '.$self->port);
 
@@ -190,7 +210,7 @@ sub run {
     return;
 }
 
-sub DESTROY {
+sub shutdown {
     my $self = shift;
     my $pid = $self->pid;
     if( defined $pid ) {

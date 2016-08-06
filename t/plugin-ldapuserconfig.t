@@ -7,7 +7,7 @@ use Test::More tests => 5;
 use Test::Exception;
 use Test::MockObject;
 
-use Mail::MtPolicyd::LdapConnection;
+use Mail::MtPolicyd::ConnectionPool;
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::Plugin::LdapUserConfig;
 
@@ -28,15 +28,16 @@ my $session = {
 };
 
 # build a moch LdapConnection
-Mail::MtPolicyd::LdapConnection->initialize(
-    host => 'dummy',
-    port => 389,
-    binddn => 'cn=readonly,dc=domain,dc=com',
-    password => 'secret',
-    starttls => 1,
-    connection_class => 'Test::Net::LDAP::Mock',
-);
-my $ldap = Mail::MtPolicyd::LdapConnection->handle;
+Mail::MtPolicyd::ConnectionPool->load_connection('ldap', {
+  module => 'Ldap',
+  host => 'dummy',
+  port => 389,
+  binddn => 'cn=readonly,dc=domain,dc=com',
+  password => 'secret',
+  starttls => 1,
+  connection_class => 'Test::Net::LDAP::Mock',
+} );
+my $ldap = Mail::MtPolicyd::ConnectionPool->get_handle('ldap');
 $ldap->add('uid=max,ou=users,dc=domain,dc=com', attrs => [
   uid => 'max',
   gn => 'Max',

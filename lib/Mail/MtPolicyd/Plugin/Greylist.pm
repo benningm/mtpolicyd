@@ -341,7 +341,7 @@ sub expire_autowl_rows {
 sub get_ticket {
 	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
 	my $key = join(",", $sender, $ip, $rcpt );
-	if( my $ticket = $r->server->_memcached_handle->get( $key ) ) {
+	if( my $ticket = $self->_memcached_handle->get( $key ) ) {
 		return( $ticket );
 	}
 	return;
@@ -358,7 +358,7 @@ sub is_valid_ticket {
 sub remove_ticket {
 	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
 	my $key = join(",", $sender, $ip, $rcpt );
-	$r->server->_memcached_handle->delete( $key );
+	$self->_memcached_handle->delete( $key );
 	return;
 }
 
@@ -366,7 +366,7 @@ sub do_create_ticket {
 	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
 	my $ticket = time + $self->min_retry_wait;
 	my $key = join(",", $sender, $ip, $rcpt );
-	$r->server->_memcached_handle->set( $key, $ticket, $self->max_retry_wait );
+	$self->_memcached_handle->set( $key, $ticket, $self->max_retry_wait );
 	return;
 }
 

@@ -4,12 +4,54 @@ use Moose;
 
 extends 'Mail::MtPolicyd::Connection';
 
-# ABSTRACT: connection pool object to hold a ldap connection
+# ABSTRACT: a LDAP connection plugin for mtpolicyd
 # VERSION
 
 use Net::LDAP;
 
-has 'host' => ( is => 'ro', isa => 'Str', required => 1 );
+=head1 SYNOPSIS
+
+  <Connection ldap>
+    module = "Ldap"
+    host = "localhost"
+  </Connection>
+
+=head1 PARAMETERS
+
+=over
+
+=item host (default: 'localhost')
+
+LDAP server to connect to.
+
+=item port (default: 389)
+
+LDAP servers port number to connect to.
+
+=item keepalive (default: 1)
+
+Enable connection keepalive for this connection.
+
+=item timeout (default: 120)
+
+Timeout in seconds for operations on this connection.
+
+=item binddn (default: undef)
+
+If set a bind with this binddn is done when connecting.
+
+=item password (default: undef)
+
+
+=item starttls (default: 1)
+
+Enable or disabled the use of starttls. (TLS/SSL encryption)
+
+=back
+
+=cut
+
+has 'host' => ( is => 'ro', isa => 'Str', default => 'localhost' );
 has 'port' => ( is => 'ro', isa => 'Int', default => 389 );
 
 has 'keepalive' => ( is => 'ro', isa => 'Bool', default => 1 );

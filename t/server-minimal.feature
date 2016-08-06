@@ -8,3 +8,4 @@ Feature: the mtpolicyd must be able to start
     client_address=84.204.103.98
     """
     Then mtpolicyd must respond with a action like ^reject test
+    And the mtpolicyd server must be stopped successfull

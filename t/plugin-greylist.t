@@ -9,7 +9,7 @@ use Test::MockObject;
 use Test::Memcached;
 
 use Mail::MtPolicyd::Request;
-use Mail::MtPolicyd::SqlConnection;
+use Mail::MtPolicyd::ConnectionPool;
 use Mail::MtPolicyd::Plugin::Greylist;
 
 use Cache::Memcached;
@@ -22,14 +22,12 @@ $mc_server->start;
 
 plan tests => 79;
 
-my $memcached = Cache::Memcached->new(
-    servers => [ '127.0.0.1:'.$mc_server->option('tcp_port') ],
-    namespace => 'mt-test-',
-    debug => 0,
-);
-
-
-isa_ok($memcached, 'Cache::Memcached');
+Mail::MtPolicyd::ConnectionPool->load_connection( 'memcached', {
+  module => 'Memcached',
+  servers => '127.0.0.1:'.$mc_server->option('tcp_port'),
+} );
+my $memcached = Mail::MtPolicyd::ConnectionPool->get_handle('memcached');
+isa_ok( $memcached, 'Cache::Memcached' );
 
 my $p = Mail::MtPolicyd::Plugin::Greylist->new(
 	name => 'greylist-test',
@@ -38,11 +36,12 @@ my $p = Mail::MtPolicyd::Plugin::Greylist->new(
 isa_ok($p, 'Mail::MtPolicyd::Plugin::Greylist');
 
 # build a fake database with an in-memory SQLite DB
-Mail::MtPolicyd::SqlConnection->initialize(
-    dsn => 'dbi:SQLite::memory:',
-    user => '',
-    password => '',
-);
+Mail::MtPolicyd::ConnectionPool->load_connection( 'db', {
+  module => 'Sql',
+  dsn => 'dbi:SQLite::memory:',
+  user => '',
+  password => '',
+} );
 
 lives_ok {
     $p->init();
@@ -57,8 +56,6 @@ my $server = Test::MockObject->new;
 $server->set_isa('Net::Server');
 $server->mock( 'log',
     sub { my ( $self, $level, $message ) = @_; print '# LOG('.$level.'): '.$message."\n" } );
-
-$server->mock( 'memcached', sub { return $memcached; } );
 
 sub test_one_greylisting_circle {
     my ( $sender, $client_address, $recipient, $r, $count ) = @_;
@@ -119,7 +116,7 @@ ok( ! defined $result, 'greylisting no longer active' );
 
 # now manipulate autowl to expire all records
 lives_ok {
-    Mail::MtPolicyd::SqlConnection->dbh->do(
+    Mail::MtPolicyd::ConnectionPool->get_handle('db')->do(
         'UPDATE autowl SET last_seen=1;'
     );
 } 'manipulate autowl, expire';

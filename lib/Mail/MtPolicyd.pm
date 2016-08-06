@@ -261,7 +261,9 @@ sub child_finish_hook {
 	$self->_set_process_stat('finish');
 
   Mail::MtPolicyd::ConnectionPool->shutdown;
-  $self->{'session_cache'}->shutdown;
+  if( defined $self->{'session_cache'} ) {
+    $self->{'session_cache'}->shutdown;
+  }
 
 	return;
 }
