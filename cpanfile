@@ -48,6 +48,7 @@ on 'test' => sub {
   requires 'Test::Exception';
   requires 'Test::Memcached';
   requires 'Test::Mock::Net::Server::Mail';
+  requires 'Test::Net::LDAP::Mock';
   requires 'Test::MockObject';
   requires 'Test::More';
 };
