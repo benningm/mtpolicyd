@@ -278,8 +278,17 @@ The example requires that a connection of type "Memcached" and the name
 "memcached" is configured within the connection pool.
 For details read L<Mail::MtPolicyd::SessionCache::Memcached>.
 
-As of version 2.00 it is possible to implement different session caches,
-but currently theres is only a implementation for memcached.
+As of version 2.00 it is possible to implement different session caches.
+
+Currently there are 2 session cache modules:
+
+=over
+
+=item L<Mail::MtPolicyd::SessionCache::Memcached>
+
+=item L<Mail::MtPolicyd::SessionCache::Redis>
+
+=back
 
 =head1 PROCESSING OF REQUEST
 
@@ -317,6 +326,90 @@ and the AddScoreHeader plugin will prepend the score as a header to the mail:
     module = "AddScoreHeader"
     spam_score=5
   </Plugin>
+
+=head1 UPGRADING
+
+=head2 FROM 1.x to 2.x
+
+With mtpolicyd 2.x configuration of connections and session cache has been changed.
+
+=head3 Database Connections
+
+In mtpolicyd 2.00 the connections defined globaly in the configuration file
+have been replaced by a dynamic connection pool.
+
+The global options db_* ldap_* and memcached_* have been removed.
+
+Instead connections are registred within a connection pool.
+
+You can define them using <Connection> blocks:
+
+  <Connection myconn>
+    module = "<adapter>"
+    # parameter = "value"
+    # ...
+  </Connection>
+
+In mtpolicyd 1.x:
+
+  db_dsn=DBI:mysql:mtpolicyd
+  db_user=mtpolicyd
+  db_password=secret
+
+In mtpolicyd 2.x:
+
+  <Connection db>
+     dsn = "DBI:mysql:mtpolicyd"
+     user = "mtpolicyd"
+     password = "secret"
+  </Connection>
+
+All SQL modules will by default use the connection registred as "db".
+
+See modules in Mail::MtPolicyd::Connection::* for available connection adapters.
+
+=head3 Session Cache
+
+Starting with mtpolicyd 2.x it is possible to use other session caches then memcached.
+
+The global session_* parameters have been removed.
+
+Instead the session cache is defined by a <SessionCache> block:
+
+  <SessionCache>
+    module = "<module>"
+    # parameter = "value"
+    # ...
+  </SessionCache>
+
+A memcached session cache in mtpolicyd v1.x:
+
+  memcached_servers="127.0.0.1:11211"
+
+  session_lock_wait=50
+  session_lock_max_retry=50
+  session_lock_timeout=10
+
+In mtpolicyd 2.x:
+
+  <Connection memcached>
+    servers = "127.0.0.1:11211"
+  </Connection>
+
+  <SessionCache>
+    module = "Memcached"
+    # defaults to connection "memcached"
+    # memcached = "memcached"
+    lock_wait = "50"
+    lock_max_retry = "50"
+    lock_timeout = "10"
+  </SessionCache>
+
+If no <SessionCache> is defined it will default to the
+dummy session cache module "None".
+
+See modules in Mail::MtPolicyd::SessionCache::* for available session
+cache modules.
 
 =cut
 
