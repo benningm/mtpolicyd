@@ -36,6 +36,8 @@ requires 'Time::HiRes';
 requires 'Time::Piece';
 requires 'Time::Seconds';
 requires 'namespace::autoclean';
+requires 'strict';
+requires 'Storable';
 
 on 'test' => sub {
   requires 'DBD::SQLite';
@@ -52,10 +54,12 @@ on 'test' => sub {
   requires 'Test::Net::LDAP::Mock';
   requires 'Test::MockObject';
   requires 'Test::More';
+  requires 'Test::Pod';
 };
 
 on 'develop' => sub {
   requires 'ExtUtils::MakeMaker';
+  requires 'Dist::Zilla::Plugin::MetaProvides::Package';
   requires 'Dist::Zilla::Plugin::Prereqs::FromCPANfile';
   requires 'Dist::Zilla::Plugin::ChangelogFromGit';
   requires 'Dist::Zilla::Plugin::ChangelogFromGit::Debian';

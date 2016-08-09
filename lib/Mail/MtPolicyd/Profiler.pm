@@ -1,6 +1,8 @@
 package Mail::MtPolicyd::Profiler;
 
 use strict;
+use warnings;
+
 use MooseX::Singleton;
 use namespace::autoclean;
 

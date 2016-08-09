@@ -1,6 +1,7 @@
 package Mail::MtPolicyd;
 
 use strict;
+use warnings;
 use base qw(Net::Server::PreFork);
 
 # VERSION

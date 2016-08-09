@@ -1,6 +1,7 @@
 package Mail::MtPolicyd::ConnectionPool;
 
 use strict;
+use warnings;
 use MooseX::Singleton;
 
 # VERSION
