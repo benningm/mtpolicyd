@@ -49,7 +49,7 @@ has 'db' => ( is => 'ro', isa => 'Int', default => 0 );
 sub _create_handle {
   my $self = shift;
   my $redis = Redis->new(
-    'server' => $self->servers,
+    'server' => $self->server,
     'debug' => $self->debug,
     defined $self->password ? ( 'password' => $self->password ) : (),
   );
@@ -73,7 +73,8 @@ sub reconnect {
 
 sub shutdown {
   my $self = shift;
-  $self->handle->disconnect_all;
+  $self->handle->wait_all_responses;
+  $self->handle->quit;
   return;
 }
 

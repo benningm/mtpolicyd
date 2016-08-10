@@ -12,6 +12,8 @@ with 'Mail::MtPolicyd::Role::Connection' => {
   type => 'Memcached',
 };
 
+use Time::HiRes qw(usleep);
+
 =head1 SYNOPSIS
 
   <SessionCache>

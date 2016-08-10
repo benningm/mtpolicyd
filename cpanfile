@@ -50,11 +50,14 @@ on 'test' => sub {
   requires 'Test::BDD::Cucumber::Loader';
   requires 'Test::Exception';
   requires 'Test::Memcached';
+  requires 'Test::RedisDB';
   requires 'Test::Mock::Net::Server::Mail';
   requires 'Test::Net::LDAP::Mock';
   requires 'Test::MockObject';
   requires 'Test::More';
   requires 'Test::Pod';
+  requires 'String::Random';
+  requires 'Test::Deep';
 };
 
 on 'develop' => sub {

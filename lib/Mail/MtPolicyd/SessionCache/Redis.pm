@@ -5,6 +5,7 @@ use Moose;
 # VERSION
 # ABSTRACT: a session cache adapter for redis
 
+use Time::HiRes qw(usleep);
 use Storable;
 
 extends 'Mail::MtPolicyd::SessionCache::Base';
@@ -107,7 +108,7 @@ sub retrieve_session {
 
 	if( my $blob = $self->_redis_handle->get($instance) ) {
     my $session;
-    eval { $session = Storage::thaw( $blob ) };
+    eval { $session = Storable::thaw( $blob ) };
     if( $@ ) {
       die("could not restore session $instance: $@");
     }
