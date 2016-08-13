@@ -122,7 +122,7 @@ subtest 'test session cache Redis', sub {
 
   Mail::MtPolicyd::ConnectionPool->load_connection( 'redis', {
     module => 'Redis',
-    servers => '127.0.0.1:'.$redis->port,
+    server => '127.0.0.1:'.$redis->port,
   } );
 
   lives_ok {
