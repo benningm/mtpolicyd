@@ -21,7 +21,7 @@ extends 'Mail::MtPolicyd::Connection';
 
 =item servers (default: 127.0.0.1:11211)
 
-Comma seperated list for memcached servers to connect.
+Comma separated list for memcached servers to connect.
 
 =item debug (default: 0)
 

@@ -41,7 +41,7 @@ Specify the path to the UNIX domain socket.
 
 =item sentinels (default: undef)
 
-Specify a comma seperated list of sentinel instances to contact
+Specify a comma separated list of sentinel instances to contact
 for finding the master for the service specified by "service" below.
 
 =item service (default: undef)

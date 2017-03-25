@@ -51,7 +51,7 @@ filter string.
 
 =item config_fields (required)
 
-A comma seperated list of LDAP attributes to retrieve and
+A comma separated list of LDAP attributes to retrieve and
 copy into the current mtpolicyd session.
 
 =back
