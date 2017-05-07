@@ -82,3 +82,6 @@ on 'develop' => sub {
   requires 'Dist::Zilla::PluginBundle::Git';
 };
 
+feature 'mysql' => sub {
+  recommends 'DBD::mysql';
+}

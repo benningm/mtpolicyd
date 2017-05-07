@@ -20,7 +20,7 @@ my $mc_server = Test::Memcached->new
   or plan skip_all => 'could not start memcached (not installed?), skipping test...';
 $mc_server->start;
 
-plan tests => 79;
+plan tests => 73;
 
 Mail::MtPolicyd::ConnectionPool->load_connection( 'memcached', {
   module => 'Memcached',
@@ -31,7 +31,7 @@ isa_ok( $memcached, 'Cache::Memcached' );
 
 my $p = Mail::MtPolicyd::Plugin::Greylist->new(
 	name => 'greylist-test',
-    autowl_threshold => 5,
+  autowl_threshold => 5,
 );
 isa_ok($p, 'Mail::MtPolicyd::Plugin::Greylist');
 
@@ -79,13 +79,16 @@ sub test_one_greylisting_circle {
     lives_ok { $result = $p->run($r); } 'execute request';
     ok( ! defined $result, 'greylisting no longer active' );
 
-    # now we should have a autowl row
-    my $row;
+    # now we should have a autowl entry
+    my $seen;
     lives_ok {
-        $row = $p->get_autowl_row( $sender_domain, $client_address );
+      $seen = $p->_awl->get( $sender_domain, $client_address );
     } 'retrieve autowl row';
-    ok( ref($row) eq 'HASH', 'row is an hash reference');
-    cmp_ok( $row->{'count'}, 'eq', $count, 'autowl count must be '.$count);
+    if( defined $count ) {
+      cmp_ok( $seen, 'eq', $count, 'autowl count must be '.$count);
+    } else {
+      ok( ! defined $seen, 'must be no autowl present');
+    }
 }
 
 my $sender = 'newsender@domain'.int(rand(1000000)).'.de';
@@ -106,7 +109,7 @@ my $r = Mail::MtPolicyd::Request->new(
 isa_ok( $r, 'Mail::MtPolicyd::Request');
 
 foreach my $count (1..5) {
-    test_one_greylisting_circle( $sender, $client_address, $recipient, $r, $count );
+  test_one_greylisting_circle( $sender, $client_address, $recipient, $r, $count );
 }
 
 # now autowl_threshold must be reached
@@ -116,13 +119,13 @@ ok( ! defined $result, 'greylisting no longer active' );
 
 # now manipulate autowl to expire all records
 lives_ok {
-    Mail::MtPolicyd::ConnectionPool->get_handle('db')->do(
-        'UPDATE autowl SET last_seen=1;'
-    );
+  Mail::MtPolicyd::ConnectionPool->get_handle('db')->do(
+   'UPDATE autowl SET last_seen=1;'
+  );
 } 'manipulate autowl, expire';
 
 # greylisting should be active again
-test_one_greylisting_circle( $sender, $client_address, $recipient, $r, 1 );
+test_one_greylisting_circle( $sender, $client_address, $recipient, $r, undef );
 
 $mc_server->stop;
 

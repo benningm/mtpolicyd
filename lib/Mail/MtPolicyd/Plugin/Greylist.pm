@@ -100,7 +100,7 @@ The database handle specified in the global configuration will be used. (see man
 
 This options could be used to disable the creation of a new ticket or to query the autowl.
 
-This can be used to catch early retries at the begin of your configuration before more expensive checks a processes.
+This can be used to catch early retries at the begin of your configuration before more expensive checks are processed.
 
 Example:
 
@@ -136,28 +136,68 @@ has 'mode' => ( is => 'rw', isa => 'Str', default => 'passive');
 has 'defer_message' => ( is => 'rw', isa => 'Str', default => 'defer greylisting is active');
 has 'append_waittime' => ( is => 'rw', isa => 'Bool', default => 1 );
 
-has 'min_retry_wait' => ( is => 'rw', isa => 'Int', default => 60*5 );
-has 'max_retry_wait' => ( is => 'rw', isa => 'Int', default => 60*60*2 );
-
 has 'use_autowl' => ( is => 'rw', isa => 'Bool', default => 1 );
 has 'autowl_threshold' => ( is => 'rw', isa => 'Int', default => 3 );
-has 'autowl_expire_days' => ( is => 'rw', isa => 'Int', default => 60 );
-
-has 'autowl_table' => ( is => 'rw', isa => 'Str', default => 'autowl' );
 
 has 'query_autowl' => ( is => 'rw', isa => 'Bool', default => 1 );
 has 'create_ticket' => ( is => 'rw', isa => 'Bool', default => 1 );
 
-with 'Mail::MtPolicyd::Role::Connection' => {
-  name => 'db',
-  type => 'Sql',
-};
-with 'Mail::MtPolicyd::Role::Connection' => {
-  name => 'memcached',
-  type => 'Memcached',
-};
+sub _load_backend {
+  my ( $self, $backend ) = @_;
+  my $module = $self->$backend->{'module'};
+  if( ! defined $module ) {
+    die("module must be specified for $backend backend!");
+  }
+  my $module_full = join('::', 'Mail::MtPolicyd::Plugin::Greylist', $backend, $module);
+	my $code = "require ".$module_full.";";
+	eval $code; ## no critic (ProhibitStringyEval)
+	if($@) {
+    die("could not load $backend backend: $@");
+  }
+  my $instance;
+	eval { $instance = $module_full->new(); };
+  if($@) {
+    die("could not create $backend backend: $@");
+  }
+  return $instance;
+}
 
-with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
+has 'AWL' => ( is => 'rw', isa => 'HashRef',
+  default => sub { {
+    module => 'Sql',
+  } },
+);
+has '_awl' => (
+  is => 'ro',
+  isa => 'Mail::MtPolicyd::Plugin::Greylist::AWL::Base',
+  lazy => 1,
+  default => sub {
+    my $self = shift;
+    return $self->_load_backend('AWL');
+  },
+);
+
+has 'Ticket' => ( is => 'rw', isa => 'HashRef',
+  default => sub { {
+    module => 'Memcached',
+  } },
+);
+has '_ticket' => (
+  is => 'ro',
+  isa => 'Mail::MtPolicyd::Plugin::Greylist::Ticket::Base',
+  lazy => 1,
+  default => sub {
+    my $self = shift;
+    return $self->_load_backend('Ticket');
+  },
+);
+
+sub init {
+  my $self = shift;
+  $self->_awl->init;
+  $self->_ticket->init;
+  return;
+}
 
 sub run {
 	my ( $self, $r ) = @_;
@@ -182,14 +222,14 @@ sub run {
 		}
 	}
 
-	my ( $ticket ) = $r->do_cached('greylist-ticket', sub { $self->get_ticket($r, @triplet) } );
+	my ( $ticket ) = $r->do_cached('greylist-ticket', sub { $self->_ticket->get($r, @triplet) } );
 	if( defined $ticket ) {
-		if( $self->is_valid_ticket( $ticket ) ) {
+		if( $self->_ticket->is_valid( $ticket ) ) {
 			$self->log($r, join(',', @triplet).' has a valid greylisting ticket');
 			if( $self->use_autowl && ! $r->is_already_done('greylist-autowl-add') ) {
 				$self->add_autowl( $r, @triplet );
 			}
-			$self->remove_ticket( $r, @triplet );
+			$self->_ticket->remove( $r, @triplet );
 			return $self->success( $r );
 		}
 		$self->log($r, join(',', @triplet).' has a invalid greylisting ticket. wait again');
@@ -198,7 +238,7 @@ sub run {
 
 	if( $self->create_ticket ) {
 		$self->log($r, 'creating new greylisting ticket');
-		$self->do_create_ticket($r, @triplet);
+		$self->_ticket->create($r, @triplet);
 		return( $self->defer );
 	}
 	return;
@@ -247,31 +287,22 @@ sub is_autowl {
 	my ( $self, $r, $sender, $client_ip ) = @_;
 	my $sender_domain = $self->_extract_sender_domain( $sender );
 
-	my ( $row ) = $r->do_cached('greylist-autowl-row', sub {
-		$self->get_autowl_row( $sender_domain, $client_ip );
+	my $count = $r->do_cached('greylist-autowl-count', sub {
+		$self->_awl->get( $sender_domain, $client_ip );
 	} );
 
-	if( ! defined $row ) {
+	if( ! defined $count ) {
 		$self->log($r, 'client is not on autowl');
 		return(0);
 	}
 
-	my $last_seen = $row->{'last_seen'};
-	my $expires = $last_seen + ( ONE_DAY * $self->autowl_expire_days );
-    my $now = Time::Piece->new->epoch;
-	if( $now > $expires ) {
-		$self->log($r, 'removing expired autowl row');
-		$self->remove_autowl_row( $sender_domain, $client_ip );
-		return(0);
-	}
-
-	if( $row->{'count'} < $self->autowl_threshold ) {
+	if( $count < $self->autowl_threshold ) {
 		$self->log($r, 'client has not yet reached autowl_threshold');
 		return(0);
 	}
 
-	$self->log($r, 'client has valid autowl row. updating row');
-	$self->incr_autowl_row( $sender_domain, $client_ip );
+	$self->log($r, 'client has valid autowl. updating database');
+	$self->_awl->incr( $sender_domain, $client_ip );
 	return(1);
 }
 
@@ -279,128 +310,20 @@ sub add_autowl {
 	my ( $self, $r, $sender, $client_ip ) = @_;
 	my $sender_domain = $self->_extract_sender_domain( $sender );
 
-	my ( $row ) = $r->do_cached('greylist-autowl-row', sub {
-		$self->get_autowl_row( $sender_domain, $client_ip );
+	my $count = $r->do_cached('greylist-autowl-count', sub {
+		$self->_awl->get( $sender_domain, $client_ip );
 	} );
 
-	if( defined $row ) {
+	if( defined $count ) {
 		$self->log($r, 'client already on autowl, just incrementing count');
-		$self->incr_autowl_row( $sender_domain, $client_ip );
+		$self->_awl->incr( $sender_domain, $client_ip );
 		return;
 	}
 
 	$self->log($r, 'creating initial autowl entry');
-	$self->create_autowl_row( $sender_domain, $client_ip );
+	$self->_awl->create( $sender_domain, $client_ip );
 	return;
 }
-
-sub get_autowl_row {
-	my ( $self, $sender_domain, $client_ip ) = @_;
-	my $sql = sprintf("SELECT * FROM %s WHERE sender_domain=? AND client_ip=?",
-       		$self->autowl_table );
-	return $self->execute_sql($sql, $sender_domain, $client_ip)->fetchrow_hashref;
-}
-
-sub create_autowl_row {
-	my ( $self, $sender_domain, $client_ip ) = @_;
-    my $timestamp = 
-	my $sql = sprintf("INSERT INTO %s VALUES(NULL, ?, ?, 1, %d)",
-       		$self->autowl_table, Time::Piece->new->epoch );
-	$self->execute_sql($sql, $sender_domain, $client_ip);
-	return;
-}
-
-sub incr_autowl_row {
-	my ( $self, $sender_domain, $client_ip ) = @_;
-	my $sql = sprintf(
-        "UPDATE %s SET count=count+1, last_seen=%d WHERE sender_domain=? AND client_ip=?",
-        $self->autowl_table,
-        Time::Piece->new->epoch );
-	$self->execute_sql($sql, $sender_domain, $client_ip);
-	return;
-}
-
-sub remove_autowl_row {
-	my ( $self, $sender_domain, $client_ip ) = @_;
-	my $sql = sprintf("DELETE FROM %s WHERE sender_domain=? AND client_ip=?",
-       		$self->autowl_table );
-	$self->execute_sql($sql, $sender_domain, $client_ip);
-	return;
-}
-
-sub expire_autowl_rows {
-	my ( $self ) = @_;
-	my $timeout = ONE_DAY * $self->autowl_expire_days;
-    my $now = Time::Piece->new->epoch;
-	my $sql = sprintf("DELETE FROM %s WHERE ? > last_seen + ?",
-       		$self->autowl_table );
-	$self->execute_sql($sql, $now, $timeout);
-	return;
-}
-
-sub get_ticket {
-	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
-	my $key = join(",", $sender, $ip, $rcpt );
-	if( my $ticket = $self->_memcached_handle->get( $key ) ) {
-		return( $ticket );
-	}
-	return;
-}
-
-sub is_valid_ticket {
-	my ( $self, $ticket ) = @_;
-	if( time > $ticket ) {
-		return 1;
-	}
-	return 0;
-}
-
-sub remove_ticket {
-	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
-	my $key = join(",", $sender, $ip, $rcpt );
-	$self->_memcached_handle->delete( $key );
-	return;
-}
-
-sub do_create_ticket {
-	my ( $self, $r, $sender, $ip, $rcpt ) = @_;
-	my $ticket = time + $self->min_retry_wait;
-	my $key = join(",", $sender, $ip, $rcpt );
-	$self->_memcached_handle->set( $key, $ticket, $self->max_retry_wait );
-	return;
-}
-
-sub init {
-    my $self = shift;
-    if( $self->use_autowl ) {
-        $self->check_sql_tables( %{$self->_table_definitions} );
-    }
-}
-
-has '_table_definitions' => ( is => 'ro', isa => 'HashRef', lazy => 1,
-    default => sub { {
-        'autowl' => {
-            'mysql' => 'CREATE TABLE %TABLE_NAME% (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `sender_domain` VARCHAR(255) NOT NULL,
-    `client_ip` VARCHAR(39) NOT NULL,
-    `count` INT UNSIGNED NOT NULL,
-    `last_seen` INT UNSIGNED NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `domain_ip` (`client_ip`, `sender_domain`),
-    KEY(`client_ip`),
-    KEY(`sender_domain`)
-  ) ENGINE=MyISAM  DEFAULT CHARSET=latin1',
-            'SQLite' => 'CREATE TABLE %TABLE_NAME% (
-    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-    `sender_domain` VARCHAR(255) NOT NULL,
-    `client_ip` VARCHAR(39) NOT NULL,
-    `count` INT UNSIGNED NOT NULL,
-    `last_seen` INTEGER NOT NULL
-)',
-        },
-    } },
-);
 
 sub cron {
     my $self = shift;
@@ -408,7 +331,9 @@ sub cron {
 
     if( grep { $_ eq 'hourly' } @_ ) {
         $server->log(3, 'expiring greylist autowl...');
-        $self->expire_autowl_rows;
+        $self->_awl->expire( $self->autowl_expire_days );
+        $server->log(3, 'expiring greylist tickets...');
+        $self->_ticket->expire;
     }
 
     return;
