@@ -170,7 +170,7 @@ has '_single_table_create' => ( is => 'ro', isa => 'HashRef', lazy => 1,
     UNIQUE KEY `time_key` (`key`, `time`),
     KEY(`key`),
     KEY(`time`)
-  ) ENGINE=MyISAM  DEFAULT CHARSET=latin1',
+  ) ENGINE=%MYSQL_ENGINE%  DEFAULT CHARSET=latin1',
         'SQLite' => 'CREATE TABLE %TABLE_NAME% (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     `key` VARCHAR(255) NOT NULL,

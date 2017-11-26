@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 23;
 use Test::Exception;
 
 use Mail::MtPolicyd::ConnectionPool;
@@ -20,9 +20,35 @@ with 'Mail::MtPolicyd::Role::Connection' => {
 };
 with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
+package Mail::MtPolicyd::Plugin::TestSqlUtilsMySQL;
+
+use Moose;
+use Test::MockObject;
+
+extends 'Mail::MtPolicyd::Plugin';
+has '_db_handle' => (
+  is => 'ro',
+  default => sub {
+    my $dbh = Test::MockObject->new();
+    $dbh->mock( 'quote_identifier', sub {
+      my $self = shift;
+      return shift;
+    } );
+    $dbh->{'Driver'} = {'Name' => 'mysql'};
+    $dbh->mock( 'do', sub {
+      my $self = shift;
+      $self->{'do_sql'} = shift;
+      return;
+    } );
+    return $dbh;
+  },
+);
+with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
+
 package main;
 
 import Mail::MtPolicyd::Plugin::TestSqlUtils;
+import Mail::MtPolicyd::Plugin::TestSqlUtilsMySQL;
 
 my $sql = Mail::MtPolicyd::Plugin::TestSqlUtils->new(
     name => 'sqlutils-test',
@@ -89,4 +115,44 @@ isa_ok( $sth, 'DBI::st');
 throws_ok {
     $sth = $sql->execute_sql('bla');
 } qr/syntax error/, 'execute_sql must die on error';
+
+#
+# MySQL settings tests
+#
+
+$sql = Mail::MtPolicyd::Plugin::TestSqlUtilsMySQL->new(
+    name => 'sqlutils-mysql-test',
+);
+isa_ok($sql, 'Mail::MtPolicyd::Plugin::TestSqlUtilsMySQL');
+
+lives_ok { $sql->init(); } 'init() when db available';
+
+lives_ok {
+    $sql->create_sql_table('zumsel', {
+        'mysql' => 'CREATE TABLE %TABLE_NAME% (
+ `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+ `client_ip` varchar(255) DEFAULT NULL
+) ENGINE=%MYSQL_ENGINE%  DEFAULT CHARSET=latin1'
+     } );
+} 'should not fail (mocked)';
+
+like($sql->_db_handle->{'do_sql'}, qr/CREATE TABLE zumsel/, 'table name must be set');
+like($sql->_db_handle->{'do_sql'}, qr/ENGINE=MyISAM/, 'engine must be set to MyISAM (default)');
+
+lives_ok {
+    $sql->mysql_engine('InnoDB');
+} 'setting mysql_engine must live';
+
+
+lives_ok {
+    $sql->create_sql_table('blablub', {
+        'mysql' => 'CREATE TABLE %TABLE_NAME% (
+ `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+ `client_ip` varchar(255) DEFAULT NULL
+) ENGINE=%MYSQL_ENGINE%  DEFAULT CHARSET=latin1'
+     } );
+} 'should not fail (mocked)';
+
+like($sql->_db_handle->{'do_sql'}, qr/CREATE TABLE blablub/, 'table name must be set');
+like($sql->_db_handle->{'do_sql'}, qr/ENGINE=InnoDB/, 'engine must be set to InnoDB');
 
