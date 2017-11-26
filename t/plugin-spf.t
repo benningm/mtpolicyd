@@ -11,7 +11,7 @@ use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::Plugin::SPF;
 
 my $p = Mail::MtPolicyd::Plugin::SPF->new(
-	name => 'spg',
+	name => 'spf',
 	enabled => 'on',
 	pass_score => -10,
 	pass_action => 'passive',
@@ -34,8 +34,8 @@ $server->mock( 'log',
 my $r = Mail::MtPolicyd::Request->new(
 	attributes => {
 		'instance' => 'abcd1234',
-		'helo_name' => 'saftpresse.bofh-noc.de',
-		'client_address' => '88.198.77.182',
+		'helo_name' => 'affenschaukel.bofh-noc.de',
+		'client_address' => '78.47.220.83',
 		'sender' => 'ich@markusbenning.de',
 	},
 	session => $session,
