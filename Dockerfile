@@ -1,5 +1,6 @@
 FROM perl:5.24.0
 MAINTAINER  Markus Benning <ich@markusbenning.de>
+ENV PERL_CARTON_PATH /usr/local/lib/carton
 
 COPY ./cpanfile /mtpolicyd/cpanfile
 WORKDIR /mtpolicyd
