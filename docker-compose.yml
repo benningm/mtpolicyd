@@ -9,6 +9,24 @@ services:
       - ".:/mtpolicyd"
     links:
       - memcached
+      - openldap
 
   memcached:
     image: memcached
+
+  openldap:
+    image: osixia/openldap:1.2.1
+    container_name: openldap
+    environment:
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+    volumes:
+      - "ldap_config:/etc/ldap/slapd.d"
+      - "ldap_data:/var/lib/ldap"
+    domainname: "example.org"
+    hostname: "example.org"
+
+volumes:
+  ldap_config:
+  ldap_data:
+

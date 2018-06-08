@@ -58,14 +58,10 @@ role {
     },
   );
 
-  has $handle_attr => (
-    is => 'ro',
-    lazy => 1,
-    default => sub {
-      my $self = shift;
-      return $self->$conn_attr->handle;
-    },
-  );
+  method $handle_attr => sub {
+    my $self = shift;
+    return $self->$conn_attr->handle;
+  };
 };
 
 1;
