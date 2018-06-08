@@ -1,13 +1,14 @@
 version: '2'
 services:
   mtpolicyd:
-    build: .
-    # image: benningm/mtpolicyd:latest
+    build:
+      context: .
     ports:
-     - "12345:12345"
-    #    volumes:
-      #     - .:/mtpolicyd
+      - "12345:12345"
+    volumes:
+      - ".:/mtpolicyd"
     links:
-     - memcached
+      - memcached
+
   memcached:
     image: memcached
