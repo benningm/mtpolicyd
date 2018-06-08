@@ -20,17 +20,9 @@ Start the memcached service
 
 =head2 INSTALL MTPOLICYD
 
-=head3 FROM PACKAGE (RECOMMENDED)
+=head3 FROM PACKAGE
 
-There are prebuild packages of mtpolicyd available for several linux distributions. The easiest way is to install mtpolicyd by installing the package build for your distribution.
-
-You can download the packages at: http://www.mtpolicyd.org/download.html
-
-Installing the package will create a system user/group mtpolicyd on your system, an init script and a default configuration.
-
-After installing the package you should be able to start mtpolicyd by just executing the startup script:
-
-  /etc/init.d/mtpolicyd start
+Packages for mtpolicyd are included in the Debian package repositories.
 
 =head3 FROM SOURCE/CPAN
 
