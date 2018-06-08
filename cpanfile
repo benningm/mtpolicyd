@@ -9,6 +9,7 @@ requires 'Redis';
 requires 'Config::General';
 requires 'DBI';
 requires 'Data::Dumper';
+requires 'File::Slurp';
 requires 'Geo::IP';
 requires 'Getopt::Long';
 requires 'HTTP::Request::Common';
@@ -49,7 +50,6 @@ on 'test' => sub {
   requires 'Test::BDD::Cucumber::Harness::TestBuilder';
   requires 'Test::BDD::Cucumber::Loader';
   requires 'Test::Exception';
-  requires 'Test::Memcached';
   requires 'Test::RedisDB';
   requires 'Test::Mock::Net::Server::Mail';
   requires 'Test::Net::LDAP::Mock';
