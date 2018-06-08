@@ -90,7 +90,7 @@ has '_table_definitions' => ( is => 'ro', isa => 'HashRef', lazy => 1,
     UNIQUE KEY `domain_ip` (`client_ip`, `sender_domain`),
     KEY(`client_ip`),
     KEY(`sender_domain`)
-  ) ENGINE=MyISAM  DEFAULT CHARSET=latin1',
+  ) ENGINE=%MYSQL_ENGINE%  DEFAULT CHARSET=latin1',
             'SQLite' => 'CREATE TABLE %TABLE_NAME% (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     `sender_domain` VARCHAR(255) NOT NULL,
