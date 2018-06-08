@@ -18,4 +18,6 @@ COPY ./etc/docker.conf /etc/mtpolicyd/mtpolicyd.conf
 
 EXPOSE 12345
 
+USER mtpolicyd
+
 CMD [ "carton",  "exec", "perl", "-Mlib=./lib", "bin/mtpolicyd", "-f", "-l", "2", "-c", "/etc/mtpolicyd/mtpolicyd.conf" ]
