@@ -6,7 +6,7 @@ Feature: mtpolicyd running with a basic spamhaus RBL config
     When the following request is executed on mtpolicyd:
     """
     sender=mtpolicyd@bofh-noc.de
-    client_address=1.11.122.176
+    client_address=1.3.3.1
     reverse_client_name=bofh-noc.de
     helo_name=bofh-noc.de
     """
