@@ -6,7 +6,6 @@ use warnings;
 use Test::More tests => 5;
 use Test::MockObject;
 use Mail::MtPolicyd::ConnectionPool;
-use Test::Memcached;
 use Test::RedisDB;
 use Test::Exception;
 use String::Random;
@@ -91,14 +90,9 @@ subtest 'test session cache None', sub {
 };
 
 subtest 'test session cache Memcached', sub {
-  diag('trying to start mock memcached...');
-  my $mc_server = Test::Memcached->new
-    or plan skip_all => 'could not start memcached (not installed?), skipping test...';
-  $mc_server->start;
-
   Mail::MtPolicyd::ConnectionPool->load_connection( 'memcached', {
     module => 'Memcached',
-    servers => '127.0.0.1:'.$mc_server->option('tcp_port'),
+    servers => 'memcached:11211',
   } );
 
   lives_ok {
@@ -111,8 +105,6 @@ subtest 'test session cache Memcached', sub {
   cache_basics_ok( $cache );
   cache_store_retrieve_ok( $cache );
   cache_locking_ok( $cache );
-
-  $mc_server->stop;
 };
 
 subtest 'test session cache Redis', sub {

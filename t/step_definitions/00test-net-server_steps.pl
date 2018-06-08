@@ -51,8 +51,6 @@ has 'port' => ( is => 'ro', isa => 'Int', lazy => 1,
     },
 );
 
-has 'memcached_port' => ( is => 'ro', isa => 'Maybe[Int]' );
-
 sub pid {
     my $self = shift;
 
@@ -143,7 +141,6 @@ sub generate_config {
 
     $template->process( $self->config_file, {
             port => $self->port,
-            memcached_port => $self->memcached_port,
         }, $self->tmp_config_file )
         || die "error processing config: ".$template->error(), "\n";
 

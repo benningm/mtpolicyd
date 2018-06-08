@@ -6,7 +6,6 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::MockObject;
-use Test::Memcached;
 
 use Mail::MtPolicyd::Request;
 use Mail::MtPolicyd::ConnectionPool;
@@ -15,16 +14,11 @@ use Mail::MtPolicyd::Plugin::Greylist;
 use Cache::Memcached;
 use DBI;
 
-diag('trying to start mock memcached...');
-my $mc_server = Test::Memcached->new
-  or plan skip_all => 'could not start memcached (not installed?), skipping test...';
-$mc_server->start;
-
 plan tests => 73;
 
 Mail::MtPolicyd::ConnectionPool->load_connection( 'memcached', {
   module => 'Memcached',
-  servers => '127.0.0.1:'.$mc_server->option('tcp_port'),
+  servers => 'memcached:11211',
 } );
 my $memcached = Mail::MtPolicyd::ConnectionPool->get_handle('memcached');
 isa_ok( $memcached, 'Cache::Memcached' );
@@ -126,6 +120,4 @@ lives_ok {
 
 # greylisting should be active again
 test_one_greylisting_circle( $sender, $client_address, $recipient, $r, undef );
-
-$mc_server->stop;
 
