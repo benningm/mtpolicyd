@@ -157,7 +157,7 @@ This is an example for the LDAP connection:
   starttls = 0
 </Connection>
 ```
-Don't worry if connection between MtPolicyd and LDAP servers dies. MtPolicyd checks if connection is alive, and it tries to renegotiate it. This behavior has tested with load balancer and LDAP server which expire idle sessions.
+Don't worry if connections between MtPolicyd and LDAP server die. MtPolicyd checks if the connection is alive. If the connection dies, MtPolicyd tries to renegotiate it. This behavior has tested with load balancer and LDAP server which expires idle sessions.
 
 The user _mtpolicyd_ can be:
 
