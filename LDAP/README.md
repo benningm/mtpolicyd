@@ -1,7 +1,7 @@
 # A case study over LDAP, Postfix and MtPolicyd
 ## Abstract
 With MtPolicyd you can use LDAP to profile your accounts with policies. For instance, for each **account** you can set a number of maximum message rate (for single message, or message x recipient), or a size rate too.
-We see how to implement these policies per account. Suitable for a large environment.
+We see how to implement these policies per account with a working example. Suitable for a large environment.
 
 ## Requisite
 Many email service implementations adopt LDAP as a DB to profile user preferences, SMTP routing information and authentication. You should have an LDAP server (ldap.example.com) with email account like this:
@@ -129,7 +129,7 @@ vhost_by_policy_context=1
 
 </VirtualHost>
 ```
-To understand how it works, we strongly suggest to read the [How to Accounting Quota CookBook](http://search.cpan.org/~benning/Mail-MtPolicyd-1.16/lib/Mail/MtPolicyd/Cookbook/HowtoAccountingQuota.pod).
+To understand how it works, we strongly suggest to read the [How to Accounting Quota CookBook](https://metacpan.org/pod/release/BENNING/Mail-MtPolicyd-2.03/lib/Mail/MtPolicyd/Cookbook/HowtoAccountingQuota.pod).
 
 In this example the rate time unit is _day_, but you can configure hours or other just setting the proper `time_pattern`.
 
@@ -187,3 +187,7 @@ aci: (targetattr = "objectClass || mtpolicydMailSizeLimit || uid || mtpolicydM
 ```
 
 This aci limits what user mtpolicyd can perform over LDAP data. But you can imagine more complex situations, where an aci time-defined can enforce a policy only during a specific time interval, such as night hours or weekend.
+
+## The complete example
+* [LDAP schema](97mtpolicyd.ldif)
+* [the complete mtpolicyd.conf](mtpolicyd.conf)
