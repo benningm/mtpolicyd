@@ -190,4 +190,4 @@ This aci limits what user mtpolicyd can perform over LDAP data. But you can imag
 
 ## The complete example
 * [LDAP schema](97mtpolicyd.ldif)
-* [the complete mtpolicyd.conf](mtpolicyd.conf)
+* [a complete mtpolicyd.conf example](mtpolicyd.conf)
