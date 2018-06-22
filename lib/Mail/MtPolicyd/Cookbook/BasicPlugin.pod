@@ -7,7 +7,7 @@ mtpolicyd makes use of L<Moose>. If you're not yet familiar with L<Moose> you sh
 
 =head2 Basic skeleton of a mtpolicyd plugin
 
-A plugin in mtpolicyd is basicly a class which inherits from L<Mail::MtPolicyd::Plugin> and is located below the Mail::MtPolicyd::Plugin:: namespace:
+A plugin in mtpolicyd is basically a class which inherits from L<Mail::MtPolicyd::Plugin> and is located below the Mail::MtPolicyd::Plugin:: namespace:
 
   package Mail::MtPolicyd::Plugin::HelloWorld;
 
@@ -34,7 +34,7 @@ A plugin in mtpolicyd is basicly a class which inherits from L<Mail::MtPolicyd::
 
   1;
 
-Every plugin must implement a run() method. mtpolicyd will call run() everytime your module is called from the configuration to process a request.
+Every plugin must implement a run() method. mtpolicyd will call run() every time your module is called from the configuration to process a request.
 A L<Mail::MtPolicyd::Request> object containing the current request is passed to the method.
 The run() method must return undef or a <Mail::MtPolicyd::Plugin::Result> object.
 If undef is return mtpolicyd will continue with the next plugin.
@@ -84,7 +84,7 @@ Return this string instead of the hard coded string:
 
       action => 'reject '.$self->text,
 
-The string is now configurable from the config:
+The string is now configurable from the configuration:
 
   <Plugin hello-world>
     module = "HelloWorld"

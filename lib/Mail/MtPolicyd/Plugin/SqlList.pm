@@ -32,7 +32,7 @@ use Mail::MtPolicyd::Plugin::Result;
 
 Plugin checks the client_address against a SQL table.
 
-Depending on wether a supplied SQL query matched actions can be taken.
+Depending on whether a supplied SQL query matched actions can be taken.
 
 =head2 PARAMETERS
 
@@ -140,7 +140,7 @@ sub run {
 
 =head1 EXAMPLE WITH A MYSQL TABLE
 
-You may use the following table for storing ipv4 addresses in MySQL:
+You may use the following table for storing IPv4 addresses in MySQL:
 
   CREATE TABLE `whitelist` (
     `id` int(11) NOT NULL AUTO_INCREMENT,

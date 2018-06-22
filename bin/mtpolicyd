@@ -19,7 +19,7 @@ mtpolicyd - a modular policy daemon for postfix
 
 mtpolicyd is a policy daemon for postfix access delegation.
 
-It can be configured to accept connections on several ports from a postfix mta.
+It can be configured to accept connections on several ports from a postfix MTA.
 For each port a VirtualHost can be configured and for each VirtualHost several
 Plugins can be configured.
 
@@ -63,7 +63,7 @@ Show available command line options.
 
 =item -c --config=<file> (default: /etc/mtpolicyd/mtpolicyd.conf)
 
-Specifiy the path to the configuration file.
+Specify the path to the configuration file.
 
 =item -f --foreground
 
@@ -338,7 +338,7 @@ have been replaced by a dynamic connection pool.
 
 The global options db_* ldap_* and memcached_* have been removed.
 
-Instead connections are registred within a connection pool.
+Instead connections are registered within a connection pool.
 
 You can define them using <Connection> blocks:
 
@@ -362,7 +362,7 @@ In mtpolicyd 2.x:
      password = "secret"
   </Connection>
 
-All SQL modules will by default use the connection registred as "db".
+All SQL modules will by default use the connection registered as "db".
 
 See modules in Mail::MtPolicyd::Connection::* for available connection adapters.
 

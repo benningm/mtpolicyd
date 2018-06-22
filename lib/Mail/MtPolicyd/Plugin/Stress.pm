@@ -17,7 +17,7 @@ use Mail::MtPolicyd::Plugin::Result;
 
 =head1 DESCRIPTION
 
-Will return an action or execute futher plugins if postfix signals stress.
+Will return an action or execute further plugins if postfix signals stress.
 
 See postfix STRESS_README.
 
@@ -46,9 +46,9 @@ To defer clients under stress:
     action = "defer please try again later"
   </Plugin>
 
-This will return an defer action and execute no futher tests.
+This will return an defer action and execute no further tests.
 
-You may want to do some whitelisting for preferred clients before this action.
+You may want to do some white listing for preferred clients before this action.
 
 =cut
 

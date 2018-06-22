@@ -45,7 +45,7 @@ Returns a stringified version of the response.
 
 =item action (required)
 
-The action specified in the reponse.
+The action specified in the response.
 
 =item attributes
 

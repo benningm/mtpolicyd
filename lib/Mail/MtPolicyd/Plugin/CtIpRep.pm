@@ -45,11 +45,11 @@ If an authentication key is required by the ctipd.
 
 =item reject_message (default: 550 delivery from %IP% is rejected. Check at http://www.commtouch.com/Site/Resources/Check_IP_Reputation.asp. Reference code: %REFID%)
 
-This parameter could be used to specifiy a custom reject message if message is rejected.
+This parameter could be used to specify a custom reject message if message is rejected.
 
 =item defer_message (default: 450 delivery from %IP% is deferred,repeatedly. Send again or check at http://www.commtouch.com/Site/Resources/Check_IP_Reputation.asp. Reference code: %REFID%)
 
-This parameter could be used to specifiy a custom message is a message is to be defered.
+This parameter could be used to specify a custom message is a message is to be deferred.
 
 =item (uc_)permfail_mode, (uc_)tempfail_mode (default: reject, defer)
 

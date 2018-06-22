@@ -26,7 +26,7 @@ recipient address. The ticket will be stored in memcached and will contain the t
 when the client was seen for the first time. The ticket will expire after
 the max_retry_wait timeout.
 
-The client will be defered until the min_retry_wait timeout has been reached.
+The client will be deferred until the min_retry_wait timeout has been reached.
 Only in the time between the min_retry_wait and max_retry_wait the request will
 pass the greylisting test.
 
@@ -35,7 +35,7 @@ passes the greylisting test will be stored in the autowl_table.
 The table is based on the combination of the sender domain and client_address.
 If a client passed the test at least autowl_threshold (default 3) times the greylisting
 test will be skipped.
-Additional an last_seen timestamp is stored in the record and records which are older
+Additional an last_seen time stamp is stored in the record and records which are older
 then the autowl_expire_days will expire.
 
 Please note the greylisting is done on a triplet based on the
@@ -66,7 +66,7 @@ You can set this 'accept' or 'dunno' if you want skip further checks.
 
 =item defer_message (default: defer greylisting is active)
 
-This action is returned to the MTA if a message is defered.
+This action is returned to the MTA if a message is deferred.
 
 If a client retries too fast the time left till min_retry_wait is reach will be appended to the string.
 

@@ -1,9 +1,9 @@
 # PODNAME: Mail::MtPolicyd::Cookbook::ExtendedModule
-# ABSTRACT: how to archieve certain tasks within a plugin
+# ABSTRACT: how to achieve certain tasks within a plugin
 
 =head1 Extending your mtpolicyd plugin
 
-How to archieve common task within your plugin.
+How to achieve common task within your plugin.
 
 =head2 Logging
 
@@ -28,20 +28,20 @@ This will cause your plugin to log with an higher log_level of 2.
 
 If your plugin is called from the smtpd_recipient_restrictions if will be called once for every recipient. If your plugin does an lookup (dns, database, ...) should cache the result.
 
-The L<Mail::MtPolicyd::Request> object implements the method do_cached() to archieve this:
+The L<Mail::MtPolicyd::Request> object implements the method do_cached() to achieve this:
 
   my ( $ip_result, $info ) = $r->do_cached('rbl-'.$self->name.'-result',
     sub { $self->_rbl->check( $ip ) } );
 
 The first parameter is the key in the session to store the cached result. The second parameter is a function reference.
 
-It will check if theres already an result stored in the given key within the session. In this case it will return the cached result as an array. If there is no result it will execute the code reference, store the result within the session and will also return an array containing the return values of the result.
+It will check if there's already an result stored in the given key within the session. In this case it will return the cached result as an array. If there is no result it will execute the code reference, store the result within the session and will also return an array containing the return values of the result.
 
 =head2 Doing things only once per mail
 
 If your plugin is called from the smtpd_recipient_restrictions if will be called once for every recipient but some tasks should only be performed once per mail.
 
-The L<Mail::MtPolicyd::Request> object implements the method is_already_done() to archieve this:
+The L<Mail::MtPolicyd::Request> object implements the method is_already_done() to achieve this:
 
   if( defined $self->score && ! $r->is_already_done( $self->name.'-score' ) ) {
     $self->add_score($r, $self->name => $self->score);
@@ -157,7 +157,7 @@ A plugin that implements a weekly task may look like this:
 
 The $server object could be used for logging.
 
-To see the output on the commandline you may call mtpolicyd like this:
+To see the output on the command line you may call mtpolicyd like this:
 
   mtpolicyd -f -l 4 --cron=weekly
 

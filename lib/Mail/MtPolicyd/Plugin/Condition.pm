@@ -18,7 +18,7 @@ use Mail::MtPolicyd::Plugin::Result;
 
 =head1 DESCRIPTION
 
-Will return an action, score or execute futher plugins if the specified condition matched.
+Will return an action, score or execute further plugins if the specified condition matched.
 
 =head1 PARAMETERS
 
@@ -88,7 +88,7 @@ If set to 1 the logic will be inverted.
 
 Finally an action must be specified.
 
-First the score will be applied the the action will be executed
+First the score will be applied then the action will be executed
 or if specified additional plugins will be executed.
 
 =over
