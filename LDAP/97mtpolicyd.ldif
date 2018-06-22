@@ -1,0 +1,42 @@
+dn: cn=schema
+#Attributes
+#
+attributeTypes: ( mtpolicydMailMessageLimit-oid
+  NAME ( 'mtpolicydMailMessageLimit' )
+  DESC 'MtPolicyd user defined attribute for enable accounting over count messages'
+  EQUALITY integerOrderingMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+  SINGLE-VALUE
+  X-ORIGIN 'MtPolicyd' )
+attributeTypes: ( mtpolicydMailRecipientLimit-oid
+  NAME ( 'mtpolicydMailRecipientLimit' )
+  DESC 'MtPolicyd user defined attribute for enable accounting over recipient count messages'
+  EQUALITY integerOrderingMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+  SINGLE-VALUE
+  X-ORIGIN 'MtPolicyd' )
+attributeTypes: ( mtpolicydMailSizeLimit-oid
+  NAME ( 'mtpolicydMailSizeLimit' )
+  DESC 'MtPolicyd user defined attribute for enable accounting over size limit'
+  EQUALITY integerOrderingMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+  SINGLE-VALUE
+  X-ORIGIN 'MtPolicyd' )
+attributeTypes: ( mtpolicydMailSizeRecipientLimit-oid
+  NAME ( 'mtpolicydMailSizeRecipientLimit' )
+  DESC 'MtPolicyd user defined attribute for enable accounting over size x recipient limit'
+  EQUALITY integerOrderingMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+  SINGLE-VALUE
+  X-ORIGIN 'MtPolicyd' )
+#
+#
+#Objectclasses
+objectclasses: ( mtpolicyd-oid
+  NAME 'mtpolicyd'
+  DESC 'mtPolicyd class for user level configuration'
+  SUP mailRecipient
+  AUXILIARY
+  MUST ( )
+  MAY ( mtpolicydMailMessageLimit $ mtpolicydMailRecipientLimit $ mtpolicydMailSizeLimit $ mtpolicydMailSizeRecipientLimit )
+  X-ORIGIN 'MtPolicyd' )
