@@ -9,6 +9,9 @@ RUN cpanm --notest Carton \
   && carton install \
   && rm -rf ~/.cpanm
 
+RUN cpanm --notest DBD::mysql \
+  && rm -rf ~/.cpanm
+
 RUN addgroup --system mtpolicyd \
   && adduser --system --home /mtpolicyd --no-create-home \
     --disabled-password --ingroup mtpolicyd mtpolicyd
@@ -20,4 +23,4 @@ EXPOSE 12345
 
 USER mtpolicyd
 
-CMD [ "carton",  "exec", "perl", "-Mlib=./lib", "bin/mtpolicyd", "-f", "-l", "2", "-c", "/etc/mtpolicyd/mtpolicyd.conf" ]
+CMD [ "carton",  "exec", "perl", "-Mlib=./lib", "bin/mtpolicyd", "-f", "-c", "/etc/mtpolicyd/mtpolicyd.conf" ]

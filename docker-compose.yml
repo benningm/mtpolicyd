@@ -10,6 +10,7 @@ services:
     links:
       - memcached
       - openldap
+      - mariadb
 
   memcached:
     image: memcached
@@ -26,7 +27,19 @@ services:
     domainname: "example.org"
     hostname: "example.org"
 
+  mariadb:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER: mtpolicyd
+      MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: mtpolicyd
+    volumes:
+      - "mariadb_data:/var/lib/mysql"
+
 volumes:
   ldap_config:
   ldap_data:
+  mariadb_data:
 
