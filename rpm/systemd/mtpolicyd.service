@@ -22,6 +22,7 @@
   ProtectSystem=full
   ProtectHome=yes
   NoNewPrivileges=yes
+  Restart=on-failure
   ExecStart  = /usr/bin/mtpolicyd -f
   ExecReload=/bin/kill -HUP $MAINPID
   ExecStop=/bin/kill -TERM $MAINPID
