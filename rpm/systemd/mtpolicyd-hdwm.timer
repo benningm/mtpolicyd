@@ -1,0 +1,8 @@
+[Unit]
+Description=Mtpolicyd hourly,daily,weekly,monthly timer unit
+
+[Timer]
+OnCalendar=*-1 0:0
+
+[Install]
+WantedBy=mtpolicyd.service

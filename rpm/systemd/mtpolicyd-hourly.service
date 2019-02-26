@@ -1,0 +1,8 @@
+[Unit]
+Description=Mtpolicyd hourly service unit
+
+[Service]
+TimeoutStartSec=0
+ExecStart=/usr/bin/mtpolicyd -f -l 4 --cron hourly
+Type=oneshot
+User=mtpolicyd
