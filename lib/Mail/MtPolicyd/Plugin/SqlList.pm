@@ -9,7 +9,7 @@ use namespace::autoclean;
 extends 'Mail::MtPolicyd::Plugin';
 with 'Mail::MtPolicyd::Plugin::Role::Scoring';
 with 'Mail::MtPolicyd::Plugin::Role::UserConfig' => {
-	'uc_attributes' => [ 'enabled' ],
+  'uc_attributes' => [ 'enabled' ],
 };
 
 use Mail::MtPolicyd::Plugin::Result;
@@ -77,8 +77,8 @@ If given this score will be applied to the session.
 has 'enabled' => ( is => 'rw', isa => 'Str', default => 'on' );
 
 has 'sql_query' => (
-	is => 'rw', isa => 'Str',
-	default => 'SELECT client_ip FROM whitelist WHERE client_ip=INET_ATON(?)',
+  is => 'rw', isa => 'Str',
+  default => 'SELECT client_ip FROM whitelist WHERE client_ip=INET_ATON(?)',
 );
 
 has 'score' => ( is => 'rw', isa => 'Maybe[Num]' );
@@ -92,50 +92,50 @@ with 'Mail::MtPolicyd::Role::Connection' => {
 with 'Mail::MtPolicyd::Plugin::Role::SqlUtils';
 
 sub _query_db {
-	my ( $self, $ip ) = @_;
-	return $self->execute_sql($self->sql_query, $ip)->fetchrow_array;
+  my ( $self, $ip ) = @_;
+  return $self->execute_sql($self->sql_query, $ip)->fetchrow_array;
 }
 
 sub run {
-	my ( $self, $r ) = @_;
-	my $ip = $r->attr('client_address');
-	my $session = $r->session;
-	my $config;
+  my ( $self, $r ) = @_;
+  my $ip = $r->attr('client_address');
+  my $session = $r->session;
+  my $config;
 
-	if( $self->get_uc( $session, 'enabled') eq 'off' ) {
-		return;
-	}
+  if( $self->get_uc( $session, 'enabled') eq 'off' ) {
+    return;
+  }
 
-	if( ! defined $ip) {
-		$self->log($r, 'no attribute \'client_address\' in request');
-		return;
-	}
+  if( ! defined $ip) {
+    $self->log($r, 'no attribute \'client_address\' in request');
+    return;
+  }
 
-	my $value = $r->do_cached( $self->name.'-result',
-		sub { $self->_query_db($ip) } );
-	if( $value ) {
-		$self->log($r, 'client_address '.$ip.' matched SqlList '.$self->name);
-		if( defined $self->score
-				&& ! $r->is_already_done($self->name.'-score') ) {
-			$self->add_score($r, $self->name , $self->score);
-		}
-		if( defined $self->match_action ) {
-			return Mail::MtPolicyd::Plugin::Result->new(
-				action => $self->match_action,
-				abort => 1,
-			);
-		}
-	} else {
-		$self->log($r, 'client_address '.$ip.' did not match SqlList '.$self->name);
-		if( defined $self->not_match_action ) {
-			return Mail::MtPolicyd::Plugin::Result->new(
-				action => $self->not_match_action,
-				abort => 1,
-			);
-		}
-	}
+  my $value = $r->do_cached( $self->name.'-result',
+    sub { $self->_query_db($ip) } );
+  if( $value ) {
+    $self->log($r, 'client_address '.$ip.' matched SqlList '.$self->name);
+    if( defined $self->score
+        && ! $r->is_already_done($self->name.'-score') ) {
+      $self->add_score($r, $self->name , $self->score);
+    }
+    if( defined $self->match_action ) {
+      return Mail::MtPolicyd::Plugin::Result->new(
+        action => $self->match_action,
+        abort => 1,
+      );
+    }
+  } else {
+    $self->log($r, 'client_address '.$ip.' did not match SqlList '.$self->name);
+    if( defined $self->not_match_action ) {
+      return Mail::MtPolicyd::Plugin::Result->new(
+        action => $self->not_match_action,
+        abort => 1,
+      );
+    }
+  }
 
-	return;
+  return;
 }
 
 =head1 EXAMPLE WITH A MYSQL TABLE
