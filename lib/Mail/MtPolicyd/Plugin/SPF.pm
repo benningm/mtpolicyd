@@ -134,6 +134,22 @@ A comma separated list of IP addresses to skip.
 
 Set to 'off' to disable SPF check on helo.
 
+=item max_dns_interactive_terms (default: 10)
+
+Maximum number of terms using DNS lookup in a SPF record to evaluate.
+
+Exceeding this limit will cause a permanent error as specified by RFC7208.
+
+The default of 10 is also specified in by RFC7208.
+
+=item max_name_lookups_per_term (default: 10)
+
+Maximum number of DNS lookups per SPF term.
+
+=item max_void_dns_lookups (default: 2)
+
+Maximum number of void DNS lookups.
+
 =back
 
 =head1 EXAMPLE
@@ -148,7 +164,7 @@ Set to 'off' to disable SPF check on helo.
 
 =head1 SEE ALSO
 
-L<Mail::SPF>, OpenSPF L<www.openspf.org/>, RFC 7209 L<https://tools.ietf.org/html/rfc7208>
+L<Mail::SPF>, OpenSPF L<www.openspf.org/>, RFC 7208 L<https://tools.ietf.org/html/rfc7208>
 
 =cut
 
@@ -186,6 +202,10 @@ has 'hostname' => ( is => 'ro', isa => 'Str', default => '' );
 has 'whitelist' => ( is => 'rw', isa => 'Str',
   default => '');
 
+has 'max_dns_interactive_terms' => (is => 'rw', isa => 'Maybe[Num]', default => 10);
+has 'max_name_lookups_per_term' => (is => 'rw', isa => 'Maybe[Num]', default => 10);
+has 'max_void_dns_lookups' => (is => 'rw', isa => 'Maybe[Num]', default => 2);
+
 has '_whitelist' => ( is => 'ro', isa => 'Mail::MtPolicyd::AddressList',
   lazy => 1, default => sub {
     my $self = shift;
@@ -208,7 +228,10 @@ has '_spf' => ( is => 'ro', isa => 'Mail::SPF::Server', lazy => 1,
     return Mail::SPF::Server->new(
       default_authority_explanation => $self->default_authority_explanation,
       hostname => $self->hostname,
-            dns_resolver => $self->_dns_resolver,
+      dns_resolver => $self->_dns_resolver,
+      max_dns_interactive_terms => $self->max_dns_interactive_terms,
+      max_name_lookups_per_term => $self->max_name_lookups_per_term,
+      max_void_dns_lookups => $self->max_void_dns_lookups,
     );
   },
 );
@@ -332,6 +355,16 @@ sub _check_spf_result {
       return Mail::MtPolicyd::Plugin::Result->new_dunno;
     }
     return;
+  } elsif($result->code eq 'temperror') {
+    return Mail::MtPolicyd::Plugin::Result->new(
+      action => 'defer spf '.${scope}.' check failed: '.$result->local_explanation,
+      abort => 1,
+    );
+  } elsif($result->code eq 'permerror') {
+    return Mail::MtPolicyd::Plugin::Result->new(
+      action => 'reject spf '.${scope}.' check failed: '.$result->local_explanation,
+      abort => 1,
+    );
   }
 
   $self->log( $r, 'spf '.$scope.' check failed: '.$result->local_explanation );
