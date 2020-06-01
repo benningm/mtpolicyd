@@ -117,9 +117,9 @@ sub run {
     return;
   }
 
-  my $value = $r->do_cached( $self->name.'-result',
+  my $result = $r->do_cached( $self->name.'-result',
     sub { $self->_query_db($value) } );
-  if( $value ) {
+  if( $result ) {
     $self->log($r, $self->field.' '.$value.' matched SqlList '.$self->name);
     if( defined $self->score
         && ! $r->is_already_done($self->name.'-score') ) {
