@@ -22,6 +22,10 @@ Actions based on the SPF result can be applied for:
 
 =item fail (fail_mode, default: reject)
 
+=item temperror (temperror_mode, default: defer)
+
+=item permerror (permerror_mode, default: reject)
+
 =back
 
 For status 'neutral' no action or score is applied.
@@ -91,6 +95,30 @@ Return an reject action.
 Just apply score and do not return an action.
 
 =back
+
+=item temperror_mode (default: defer)
+
+Action to apply on a temperror SPF result.
+
+Possible values: passive, dunno, defer, reject
+
+=item temperror_score (default: empty)
+
+Score to apply on a temperror SPF result.
+
+By default no score is applied.
+
+=item permerror_mode (default: reject)
+
+Action to apply on a permerror SPF result.
+
+Possible values: passive, dunno, defer, reject
+
+=item permerror_score (default: empty)
+
+Score to apply on a permerror SPF result.
+
+By default no score is applied.
 
 =item reject_message (default: )
 
@@ -205,6 +233,12 @@ has 'whitelist' => ( is => 'rw', isa => 'Str',
 has 'max_dns_interactive_terms' => (is => 'rw', isa => 'Maybe[Num]', default => 10);
 has 'max_name_lookups_per_term' => (is => 'rw', isa => 'Maybe[Num]', default => 10);
 has 'max_void_dns_lookups' => (is => 'rw', isa => 'Maybe[Num]', default => 2);
+
+has 'temperror_score' => ( is => 'rw', isa => 'Maybe[Num]' );
+has 'temperror_mode' => ( is => 'rw', isa => 'Str', default => 'defer');
+
+has 'permerror_score' => ( is => 'rw', isa => 'Maybe[Num]' );
+has 'permerror_mode' => ( is => 'rw', isa => 'Str', default => 'reject');
 
 has '_whitelist' => ( is => 'ro', isa => 'Mail::MtPolicyd::AddressList',
   lazy => 1, default => sub {
@@ -356,19 +390,48 @@ sub _check_spf_result {
     }
     return;
   } elsif($result->code eq 'temperror') {
-    return Mail::MtPolicyd::Plugin::Result->new(
-      action => 'defer spf '.${scope}.' check failed: '.$result->local_explanation,
-      abort => 1,
+    return $self->_handle_spf_error(
+      $r,
+      $result,
+      $self->temperror_mode,
+      $self->temperror_score,
+      'defer'
     );
   } elsif($result->code eq 'permerror') {
-    return Mail::MtPolicyd::Plugin::Result->new(
-      action => 'reject spf '.${scope}.' check failed: '.$result->local_explanation,
-      abort => 1,
+    return $self->_handle_spf_error(
+      $r,
+      $result,
+      $self->permerror_mode,
+      $self->permerror_score,
+      'reject'
     );
   }
 
   $self->log( $r, 'spf '.$scope.' check failed: '.$result->local_explanation );
   return;
+}
+
+sub _handle_spf_error {
+  my ($self, $r, $result, $mode, $score, $action) = @_;
+  my $scope = $result->request->scope;
+
+  $self->log($r, 'SPF '.$scope.' failed with '.$result->code.' '.$result->local_explanation);
+
+  if( defined $score && ! $r->is_already_done($self->name.'-score') ) {
+    $self->add_score( $r, $self->name => $score );
+  }
+
+  if($mode eq 'passive') {
+    return;
+  }
+  if ( $self->temperror_mode eq 'dunno') {
+    return Mail::MtPolicyd::Plugin::Result->new_dunno;
+  }
+
+  return Mail::MtPolicyd::Plugin::Result->new(
+    action => $action.' spf '.${scope}.' check failed: '.$result->local_explanation,
+    abort => 1,
+  );
 }
 
 sub _get_reject_action {

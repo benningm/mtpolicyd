@@ -4,7 +4,7 @@ mtpolicyd - the mtpolicyd executable
 
 # VERSION
 
-version 2.04
+version 2.05
 
 # DESCRIPTION
 
