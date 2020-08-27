@@ -1,0 +1,8 @@
+[Unit]
+Description=Mtpolicyd hourly,daily,weekly,monthly service unit
+
+[Service]
+TimeoutStartSec=0
+ExecStart=/usr/bin/mtpolicyd -f -l 4 --cron hourly,daily,weekly,monthly
+Type=oneshot
+User=mtpolicyd

@@ -1,0 +1,31 @@
+[Unit]
+  Description=MtPolicyd Policy Server Agent
+  After=systemd-journald-dev-log.socket network-online.target local-fs.target
+  Wants=network-online.target
+  Wants=mtpolicyd-hd.timer
+  Wants=mtpolicyd-hdwm.timer
+  Wants=mtpolicyd-hdw.timer
+  Wants=mtpolicyd-hourly.timer
+  Conflicts=shutdown.target
+
+[Service]
+  Type=simple
+  NotifyAccess=main
+  KillMode=mixed
+  TimeoutStartSec=1min
+  TimeoutStopSec=3min
+  User=mtpolicyd
+  Group=mtpolicyd
+  WorkingDirectory=/run/mtpolicyd
+  SyslogFacility=mail
+  SyslogIdentifier=mtpolicyd
+  ProtectSystem=full
+  ProtectHome=yes
+  NoNewPrivileges=yes
+  Restart=on-failure
+  ExecStart  = /usr/bin/mtpolicyd -f
+  ExecReload=/bin/kill -HUP $MAINPID
+  ExecStop=/bin/kill -TERM $MAINPID
+
+[Install]
+  WantedBy=multi-user.target
